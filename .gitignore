@@ -1,0 +1,132 @@
+# Dart & Flutter
+.dart_tool/
+.packages
+build/
+pubspec.lock
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# API Keys & Sensitive Data
+.env
+config.json
+*.key
+*.pem
+*.p12
+secrets/
+
+# Output & Generated Files
+results/
+content_briefs/
+*.log
+*.tmp
+*.temp
+
+# Build & Compiled Files
+*.dll
+*.exe
+*.o
+*.so
+*.dylib
+
+# Test & Coverage
+coverage/
+test/coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Node.js (if using any Node tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package & Distribution
+dist/
+lib/
+*.tar.gz
+*.zip
+
+# Backup Files
+*.bak
+*.backup
+*.old
+*~
+
+# Cache & Temporary
+.cache/
+tmp/
+temp/
+*.pid
+*.seed
+*.pid.lock
+
+# Runtime & Process Files
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Documentation Generation
+doc/api/
+.dartdoc/
+
+# Web Related (if applicable)
+web/build/
+web/packages/
+
+# Android (if Flutter mobile)
+android/app/debug
+android/app/profile
+android/app/release
+
+# iOS (if Flutter mobile)
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Windows (if Flutter desktop)
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+
+# Linux (if Flutter desktop)
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+
+# macOS (if Flutter desktop)
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Firebase & Google Services
+google-services.json
+GoogleService-Info.plist
+firebase-debug.log
+firestore-debug.log
+
+# Analysis & Debug
+.analyzer/
+analysis_options.yaml.bak
+
+# Custom Project Specific
+# Add any project-specific files to ignore below
+config.local.json
+*.local
+local_*
+dev_*
+staging_*

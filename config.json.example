@@ -1,0 +1,5 @@
+{
+  "anthropic_api_key": "sk-ant-your_anthropic_api_key_here",
+  "note": "Replace 'sk-ant-your_anthropic_api_key_here' with your actual Anthropic API key from https://console.anthropic.com/settings/keys",
+  "info": "API key must start with 'sk-ant-' for Anthropic Claude API"
+}
