@@ -257,7 +257,7 @@ class ContentBriefGenerator {
     return BatchMessageRequest(
       customId: customId,
       params: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
+        model: Model.modelId('claude-3-5-haiku-latest'),
         maxTokens: 100,
         system: CreateMessageRequestSystem.blocks([
           const Block.text(
@@ -323,7 +323,7 @@ Generate a compelling blog topic that incorporates the primary keyword naturally
     return BatchMessageRequest(
       customId: customId,
       params: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
+        model: Model.modelId('claude-3-5-haiku-latest'),
         maxTokens: 80,
         system: CreateMessageRequestSystem.blocks([
           const Block.text(
@@ -394,7 +394,7 @@ Create an SEO-optimized H1 title that naturally incorporates the keyword while b
     return BatchMessageRequest(
       customId: customId,
       params: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
+        model: Model.modelId('claude-3-5-haiku-latest'),
         maxTokens: 150,
         system: CreateMessageRequestSystem.blocks([
           const Block.text(
@@ -465,7 +465,7 @@ Write a compelling meta description that includes the primary keyword and makes 
     return BatchMessageRequest(
       customId: customId,
       params: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
+        model: Model.modelId('claude-3-5-haiku-latest'),
         maxTokens: 300,
         system: CreateMessageRequestSystem.blocks([
           const Block.text(
@@ -799,7 +799,7 @@ Create a comprehensive article outline with 6-8 H2 headings that naturally incor
     try {
       final response = await _anthropic.createMessage(
         request: CreateMessageRequest(
-          model: Model.modelId('claude-sonnet-4-5-20250929'), // Use same model as batch
+          model: Model.modelId('claude-3-5-haiku-latest'), // Use same model as batch
           maxTokens: 100,
           system: CreateMessageRequestSystem.blocks([
             const Block.text(
@@ -889,7 +889,7 @@ Buatkan topik blog yang menarik dengan memasukkan kata kunci utama secara natura
     try {
       final response = await _anthropic.createMessage(
         request: CreateMessageRequest(
-          model: Model.modelId('claude-sonnet-4-5-20250929'), // Use same model as batch
+          model: Model.modelId('claude-3-5-haiku-latest'), // Use same model as batch
           maxTokens: 80,
           system: CreateMessageRequestSystem.blocks([
             const Block.text(
@@ -971,7 +971,7 @@ Buatkan judul H1 yang dioptimasi SEO dengan memasukkan kata kunci secara natural
     try {
       final response = await _anthropic.createMessage(
         request: CreateMessageRequest(
-          model: Model.modelId('claude-sonnet-4-5-20250929'), // Use same model as batch
+          model: Model.modelId('claude-3-5-haiku-latest'), // Use same model as batch
           maxTokens: 150,
           system: CreateMessageRequestSystem.blocks([
             const Block.text(
@@ -1053,7 +1053,7 @@ Tuliskan meta description yang menarik dengan memasukkan kata kunci utama dan me
     try {
       final response = await _anthropic.createMessage(
         request: CreateMessageRequest(
-          model: Model.modelId('claude-sonnet-4-5-20250929'), // Use same model as batch
+          model: Model.modelId('claude-3-5-haiku-latest'), // Use same model as batch
           maxTokens: 300,
           system: CreateMessageRequestSystem.blocks([
             const Block.text(

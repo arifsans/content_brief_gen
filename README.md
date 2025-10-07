@@ -12,7 +12,7 @@ A comprehensive, professional-grade SEO tool that combines multi-source keyword 
 - **DuckDuckGo Autocomplete** - Privacy-focused search engine data with SSL error handling
 
 ### 🤖 **AI-Powered Content Brief Generation (Indonesian Language)**
-- **Anthropic Claude Integration** - Advanced AI using Claude 4.5 Sonnet for natural, SEO-optimized content in Indonesian
+- **Anthropic Claude Integration** - Advanced AI using Claude 3.5 Haiku for natural, SEO-optimized content in Indonesian
 - **Prompt Caching** - Up to **67% cost savings** after 2+ keywords using intelligent prompt caching
 - **TRUE Batch Processing** - 50% additional cost savings with Anthropic Message Batches API for bulk content generation
 - **SEO-Optimized Titles** - Character-limited, keyword-focused H1 titles (50-60 chars)
@@ -374,7 +374,7 @@ For issues, questions, or feature requests:
 If you see cache statistics showing 0 tokens, check:
 
 1. **API Key Setup**: Ensure your Anthropic API key is properly configured
-2. **Model Consistency**: The tool now uses `claude-sonnet-4-5-20250929` consistently for caching
+2. **Model Consistency**: The tool now uses `claude-3-5-haiku-latest` consistently for caching
 3. **Minimum Cache Size**: Prompts need 1024+ tokens (our prompts are 1500+ tokens)
 4. **Sequential Usage**: Cache only works within 5 minutes of the first request
 
