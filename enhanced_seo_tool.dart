@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
-import 'bin/content_brief_gen.dart' as keyword_research;
+import 'lib/content_brief_gen.dart' as keyword_research;
 import 'lib/content_brief_generator.dart';
 import 'lib/word_document_generator.dart';
 
@@ -29,7 +29,7 @@ Future<void> main(List<String> args) async {
   print('Target Keyword: "$keyword"');
   if (generateBriefs) {
     if (useBatch) {
-      print('Mode: Keyword Research + Batch Content Brief Generation (50% cost savings)');
+      print('Mode: Keyword Research + TRUE Batch Content Brief Generation (up to 50% cost savings)');
     } else {
       print('Mode: Keyword Research + Content Brief Generation');
     }
@@ -76,49 +76,46 @@ Future<void> main(List<String> args) async {
     // Generate briefs for top keywords
     final topKeywords = (keywordResults['combined'] as List<String>).take(5).toList();
     final relatedKeywords = (keywordResults['combined'] as List<String>).skip(5).take(15).toList();
+    final timestampedFolder = keywordResults['timestampedFolder'] as String;
 
     if (useBatch) {
-      print('🚀 Using batch processing for ${topKeywords.length} keywords (50% cost savings)...\n');
+      print('🚀 Using REAL Anthropic Message Batch API for ${topKeywords.length} keywords...\n');
+      print('💡 This uses true batch processing with up to 50% cost savings\n');
       
       try {
-        // Generate all briefs using batch processing
-        final briefs = await briefGenerator.generateContentBriefsBatch(
+        // Generate all briefs using REAL batch processing
+        final briefs = await briefGenerator.generateContentBriefsWithMessageBatch(
           topKeywords,
           relatedKeywords,
         );
 
         // Save all batch results
-        await briefGenerator.saveBatchContentBriefs(briefs);
+        await briefGenerator.saveBatchContentBriefs(briefs, timestampedFolder: timestampedFolder);
         
         // Generate Word documents for each brief
-        final wordGenerator = WordDocumentGenerator();
         for (final brief in briefs) {
-          await wordGenerator.generateWordDocument(brief);
+          await wordGenerator.generateWordDocument(brief, timestampedFolder: timestampedFolder);
         }
         
         print('✅ Batch processing completed for ${briefs.length} keywords!\n');
         
       } catch (e) {
         print('❌ Error in batch processing: $e');
-        print('💡 Falling back to individual processing...\n');
-        
-        // Fallback to individual processing
-        await _processIndividualBriefs(briefGenerator, wordGenerator, topKeywords, relatedKeywords);
+        print('💡 Try to use individual processing instead of batch processing');
       }
     } else {
       print('🎯 Generating content briefs individually for ${topKeywords.length} keywords...\n');
-      await _processIndividualBriefs(briefGenerator, wordGenerator, topKeywords, relatedKeywords);
+      await _processIndividualBriefs(briefGenerator, wordGenerator, topKeywords, relatedKeywords, timestampedFolder);
     }
 
     print('🎉 ALL PROCESSES COMPLETED!');
-    print('📁 Check these folders for your results:');
-    print('  • results/ - Keyword research reports');
-    print('  • content_briefs/ - SEO content briefs');
+    print('📁 All results saved to: results/$timestampedFolder');
     print('');
-    print('📄 Generated files for each keyword:');
-    print('  • .txt - Human-readable content brief');
-    print('  • .json - Machine-readable data');
-    print('  • .docx - Microsoft Word document');
+    print('📄 Generated files in this session:');
+    print('  • keyword_research_report.txt - Comprehensive keyword analysis');
+    print('  • [keyword]_content_brief.txt - Human-readable content briefs');
+    print('  • [keyword]_content_brief.json - Machine-readable data');
+    print('  • [keyword]_brief.docx - Microsoft Word documents');
 
   } catch (e) {
     print('❌ An error occurred: $e');
@@ -194,8 +191,8 @@ Future<Map<String, dynamic>> runKeywordResearch(String keyword) async {
     duckduckgoAutocomplete: duckduckgoAutocomplete,
   );
 
-  // Save keyword research results
-  await keyword_research.saveResults(keyword, categorized, combined);
+  // Save keyword research results and get the timestamped folder name
+  final timestampedFolder = await keyword_research.saveResults(keyword, categorized, combined);
 
   return {
     'keyword': keyword,
@@ -207,6 +204,7 @@ Future<Map<String, dynamic>> runKeywordResearch(String keyword) async {
     'peopleAlsoAsk': peopleAlsoAsk,
     'bingAutocomplete': bingAutocomplete,
     'duckduckgoAutocomplete': duckduckgoAutocomplete,
+    'timestampedFolder': timestampedFolder, // Add the folder name to the result
   };
 }
 
@@ -251,6 +249,7 @@ Future<void> _processIndividualBriefs(
   WordDocumentGenerator wordGenerator,
   List<String> topKeywords,
   List<String> relatedKeywords,
+  String timestampedFolder,
 ) async {
   for (var i = 0; i < topKeywords.length; i++) {
     final currentKeyword = topKeywords[i];
@@ -264,13 +263,13 @@ Future<void> _processIndividualBriefs(
       );
 
       // Save as text file
-      await briefGenerator.saveContentBrief(brief);
+      await briefGenerator.saveContentBrief(brief, timestampedFolder: timestampedFolder);
       
       // Save as JSON
-      await briefGenerator.saveContentBriefAsJson(brief);
+      await briefGenerator.saveContentBriefAsJson(brief, timestampedFolder: timestampedFolder);
       
       // Save as Word document
-      await wordGenerator.generateWordDocument(brief);
+      await wordGenerator.generateWordDocument(brief, timestampedFolder: timestampedFolder);
       
       print('✅ Brief completed for: "$currentKeyword"\n');
       

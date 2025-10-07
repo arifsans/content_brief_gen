@@ -20,6 +20,25 @@ Future<void> _randomDelay({int minMs = 400, int maxMs = 1200}) async {
   await Future.delayed(Duration(milliseconds: ms));
 }
 
+/// Create timestamped directory for organizing results
+String createTimestampedFolder(String baseKeyword) {
+  final safeKeyword = baseKeyword.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+  final now = DateTime.now();
+  
+  // Format: YYYY-MM-DD_HH-MM-SS_keyword
+  final year = now.year.toString();
+  final month = now.month.toString().padLeft(2, '0');
+  final day = now.day.toString().padLeft(2, '0');
+  final hour = now.hour.toString().padLeft(2, '0');
+  final minute = now.minute.toString().padLeft(2, '0');
+  final second = now.second.toString().padLeft(2, '0');
+  
+  final timestamp = '${year}-${month}-${day}_${hour}-${minute}-${second}';
+  final folderName = '${timestamp}_${safeKeyword.replaceAll(' ', '_')}';
+  
+  return folderName;
+}
+
 /// Phase 1: fetch autocomplete suggestions (public endpoint)
 Future<List<String>> fetchAutocomplete(String keyword) async {
   final encoded = Uri.encodeQueryComponent(keyword);
@@ -487,9 +506,11 @@ bool _isQuestionKeyword(String keyword) {
   return questionWords.any((word) => lower.contains(word)) || keyword.endsWith('?');
 }
 
-Future<void> saveResults(String keyword, Map<String, List<String>> categorizedResults, List<String> allResults) async {
-  final safeKeyword = keyword.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+Future<String> saveResults(String keyword, Map<String, List<String>> categorizedResults, List<String> allResults, {String? timestampedFolder}) async {
   final now = DateTime.now();
+  
+  // Use provided timestamped folder or create a new one
+  final folderName = timestampedFolder ?? createTimestampedFolder(keyword);
   
   // Format date-time as dd-MMMM-yyyy HH:mm
   final months = [
@@ -504,16 +525,12 @@ Future<void> saveResults(String keyword, Map<String, List<String>> categorizedRe
   final minute = now.minute.toString().padLeft(2, '0');
   
   final dateTime = '$day-$month-$year $hour:$minute';
-  final dateForFilename = '${day}-${month}-${year}_${hour}-${minute}';
   
-  final filename = 'results/${safeKeyword.replaceAll(' ', '_')}_$dateForFilename.txt';
+  // Create timestamped results directory
+  final resultsDir = Directory('results/$folderName');
+  await resultsDir.create(recursive: true);
   
-  // Ensure results directory exists
-  final resultsDir = Directory('results');
-  if (!await resultsDir.exists()) {
-    await resultsDir.create(recursive: true);
-  }
-  
+  final filename = '${resultsDir.path}/keyword_research_report.txt';
   final file = File(filename);
   
   // Create content with header including date-time
@@ -569,6 +586,10 @@ Future<void> saveResults(String keyword, Map<String, List<String>> categorizedRe
   
   await file.writeAsString(content.toString());
   stdout.writeln('💾 Saved comprehensive report to $filename');
+  stdout.writeln('📁 Session folder: results/$folderName');
+  
+  // Return the folder name for use in enhanced_seo_tool.dart
+  return folderName;
 }
 
 Future<void> main(List<String> args) async {

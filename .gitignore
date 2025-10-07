@@ -58,7 +58,6 @@ yarn-error.log*
 
 # Package & Distribution
 dist/
-lib/
 *.tar.gz
 *.zip
 
