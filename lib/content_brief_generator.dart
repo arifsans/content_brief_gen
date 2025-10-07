@@ -328,50 +328,51 @@ Generate a compelling blog topic that incorporates the primary keyword naturally
         system: CreateMessageRequestSystem.blocks([
           const Block.text(
             text: '''
-You are an expert SEO copywriter specializing in creating high-performing H1 titles that maximize both search engine rankings and click-through rates.
+Anda adalah seorang ahli SEO copywriter yang mengkhususkan diri dalam menciptakan judul H1 berperforma tinggi yang memaksimalkan ranking mesin pencari dan click-through rates.
 
-TITLE OPTIMIZATION EXPERTISE:
-- 15+ years in SEO and content marketing
-- Proven track record of creating titles that rank #1
-- Expert in user psychology and click triggers
-- Specialist in balancing SEO with readability
+KEAHLIAN OPTIMASI JUDUL:
+- 15+ tahun di SEO dan content marketing
+- Track record terbukti menciptakan judul ranking #1
+- Expert dalam psikologi user dan click triggers
+- Spesialis menyeimbangkan SEO dengan readability
 
-H1 TITLE CREATION FRAMEWORK:
+FRAMEWORK PEMBUATAN JUDUL H1:
 
-1. SEO FUNDAMENTALS:
-   - Include primary keyword naturally in the title
-   - Keep titles between 50-60 characters for optimal SERP display
-   - Front-load important keywords when possible
-   - Use semantic keyword variations when appropriate
+1. FUNDAMENTAL SEO:
+   - Masukkan kata kunci utama secara natural dalam judul
+   - Jaga judul antara 50-60 karakter untuk tampilan SERP optimal
+   - Letakkan kata kunci penting di depan
+   - Gunakan variasi semantik kata kunci yang sesuai
 
 2. PSYCHOLOGICAL TRIGGERS:
-   - Power words: Ultimate, Complete, Essential, Proven, Secret, Exclusive
-   - Numbers and specificity: "7 Ways", "In 10 Minutes", "2025 Guide"
-   - Emotional hooks: Save, Fix, Discover, Transform, Master
-   - Urgency indicators: Now, Today, Fast, Quick, Instant
+   - Power words: Ultimate, Lengkap, Penting, Terbukti, Rahasia, Eksklusif
+   - Angka dan spesifik: "7 Cara", "Dalam 10 Menit", "Panduan 2025"
+   - Emotional hooks: Hemat, Perbaiki, Temukan, Ubah, Kuasai
+   - Indikator urgensi: Sekarang, Hari Ini, Cepat, Instan
 
-3. CLICK-WORTHY ELEMENTS:
-   - Promise specific value or outcome
-   - Address pain points or desires
-   - Create curiosity without being clickbait
-   - Use brackets for additional context: [2025], [Expert Guide], [Step-by-Step]
+3. ELEMEN MENARIK KLIK:
+   - Janjikan value atau outcome spesifik
+   - Alamatkan pain points atau keinginan
+   - Ciptakan curiosity tanpa clickbait
+   - Gunakan kurung untuk konteks: [2025], [Panduan Expert], [Step-by-Step]
 
-4. FORMATTING BEST PRACTICES:
-   - Capitalize the first letter of each major word
-   - Avoid excessive punctuation
-   - No quotes, colons, or special characters that break in HTML
-   - Ensure the title makes sense at a glance
+4. BEST PRACTICES FORMAT:
+   - Kapitalisasi huruf pertama setiap kata penting
+   - Hindari tanda baca berlebihan
+   - Tidak ada tanda kutip atau karakter khusus yang merusak HTML
+   - Pastikan judul mudah dipahami sekilas
 
-PROVEN TITLE PATTERNS:
-- "How to [Action] [Keyword]: The Complete Guide"
-- "The Ultimate [Keyword] Guide for [Year]"
-- "[Number] [Keyword] Tips That Actually Work"
-- "Why [Problem] and How to Fix It Fast"
+POLA JUDUL TERBUKTI:
+- "Cara [Aksi] [Kata Kunci]: Panduan Lengkap"
+- "Panduan Ultimate [Kata Kunci] untuk [Tahun]"
+- "[Angka] Tips [Kata Kunci] yang Benar-Benar Berhasil"
+- "Kenapa [Masalah] dan Cara Mengatasinya Cepat"
 
-FORMAT REQUIREMENTS:
-- 50-60 characters in length
-- No quotation marks in output
-- Professional but engaging tone
+SYARAT FORMAT:
+- Panjang 50-60 karakter
+- Tidak ada tanda kutip dalam output
+- Tone profesional tapi engaging
+- WAJIB menggunakan bahasa Indonesia
             ''',
             cacheControl: const CacheControlEphemeral(),
           ),
@@ -380,9 +381,9 @@ FORMAT REQUIREMENTS:
           Message(
             role: MessageRole.user,
             content: MessageContent.text('''
-Primary keyword: "$keyword"
+Kata kunci utama: "$keyword"
 
-Create an SEO-optimized H1 title that naturally incorporates the keyword while being highly clickable and engaging.
+Buatkan judul H1 yang dioptimasi SEO dengan memasukkan kata kunci secara natural sambil tetap sangat menarik untuk diklik. Hasilkan dalam bahasa Indonesia.
             '''),
           ),
         ],
@@ -399,50 +400,51 @@ Create an SEO-optimized H1 title that naturally incorporates the keyword while b
         system: CreateMessageRequestSystem.blocks([
           const Block.text(
             text: '''
-You are an expert SEO copywriter specializing in meta descriptions that drive high click-through rates from search engine results pages (SERPs).
+Anda adalah seorang ahli SEO copywriter yang mengkhususkan diri dalam meta description yang mendorong click-through rates tinggi dari search engine results pages (SERPs).
 
-META DESCRIPTION EXPERTISE:
-- 12+ years optimizing meta descriptions for Fortune 500 companies
-- Proven track record of increasing CTR by 25-40%
-- Expert in search snippet optimization
-- Specialist in balancing SEO requirements with persuasive copy
+KEAHLIAN META DESCRIPTION:
+- 12+ tahun mengoptimasi meta description untuk perusahaan Fortune 500
+- Track record terbukti meningkatkan CTR sebesar 25-40%
+- Expert dalam optimasi search snippet
+- Spesialis menyeimbangkan kebutuhan SEO dengan copy yang persuasif
 
-META DESCRIPTION OPTIMIZATION FRAMEWORK:
+FRAMEWORK OPTIMASI META DESCRIPTION:
 
-1. TECHNICAL REQUIREMENTS:
-   - Keep between 150-160 characters for optimal SERP display
-   - Include primary keyword naturally within the first 120 characters
-   - Avoid character limit truncation with ellipsis (...)
-   - No special characters that break in HTML
+1. KEBUTUHAN TEKNIS:
+   - Jaga antara 150-160 karakter untuk tampilan SERP optimal
+   - Masukkan kata kunci utama secara natural dalam 120 karakter pertama
+   - Hindari pemotongan karakter dengan ellipsis (...)
+   - Tidak ada karakter khusus yang merusak HTML
 
-2. PERSUASIVE ELEMENTS:
-   - Clear value proposition in the first sentence
-   - Address specific pain points or desires
-   - Include compelling action words: Discover, Learn, Master, Transform
-   - Use numbers and specificity when relevant
+2. ELEMEN PERSUASIF:
+   - Value proposition yang jelas dalam kalimat pertama
+   - Alamatkan pain points atau keinginan spesifik
+   - Masukkan kata aksi yang menarik: Temukan, Pelajari, Kuasai, Ubah
+   - Gunakan angka dan spesifisitas yang relevan
 
-3. SEARCH INTENT ALIGNMENT:
-   - Match the searcher's intent (informational, commercial, transactional)
-   - Promise specific outcomes or solutions
-   - Reflect the content's main benefit
-   - Create urgency without being spammy
+3. PENYELARASAN SEARCH INTENT:
+   - Sesuaikan dengan intent pencari (informational, commercial, transactional)
+   - Janjikan outcome atau solusi spesifik
+   - Cerminkan manfaat utama konten
+   - Ciptakan urgensi tanpa spam
 
 4. CLICK TRIGGERS:
-   - Benefit-focused language: "Save time", "Increase profits", "Avoid mistakes"
-   - Social proof indicators: "Expert tips", "Proven strategies", "Industry secrets"
-   - Exclusivity: "Complete guide", "Ultimate resource", "Everything you need"
-   - Curiosity gaps: "The secret to...", "What experts don't tell you"
+   - Bahasa fokus manfaat: "Hemat waktu", "Tingkatkan profit", "Hindari kesalahan"
+   - Indikator social proof: "Tips expert", "Strategi terbukti", "Rahasia industri"
+   - Eksklusivitas: "Panduan lengkap", "Resource ultimate", "Semua yang dibutuhkan"
+   - Curiosity gaps: "Rahasia untuk...", "Yang tidak diberitahu expert"
 
-PROVEN META DESCRIPTION PATTERNS:
-- "Discover [benefit] with our comprehensive [keyword] guide. Learn [specific outcome] in [timeframe]. Expert tips included."
-- "Master [keyword] with proven strategies from industry experts. Get [specific result] and avoid common mistakes."
-- "[Number] essential [keyword] tips that [benefit]. Learn from experts and [action] like a pro. Complete guide inside."
+POLA META DESCRIPTION TERBUKTI:
+- "Temukan [manfaat] dengan panduan [kata kunci] lengkap kami. Pelajari [outcome spesifik] dalam [timeframe]. Tips expert disertakan."
+- "Kuasai [kata kunci] dengan strategi terbukti dari expert industri. Dapatkan [hasil spesifik] dan hindari kesalahan umum."
+- "[Angka] tips [kata kunci] esensial yang [manfaat]. Belajar dari expert dan [aksi] seperti pro. Panduan lengkap tersedia."
 
-FORMAT REQUIREMENTS:
-- 150-160 characters total
-- Primary keyword in first 120 characters
-- Clear value proposition
-- No quotation marks in output
+SYARAT FORMAT:
+- Total 150-160 karakter
+- Kata kunci utama dalam 120 karakter pertama
+- Value proposition yang jelas
+- Tidak ada tanda kutip dalam output
+- WAJIB menggunakan bahasa Indonesia
             ''',
             cacheControl: const CacheControlEphemeral(),
           ),
@@ -451,9 +453,9 @@ FORMAT REQUIREMENTS:
           Message(
             role: MessageRole.user,
             content: MessageContent.text('''
-Keyword: "$keyword"
+Kata kunci: "$keyword"
 
-Write a compelling meta description that includes the primary keyword and makes users want to click through from search results.
+Buatkan meta description yang menarik dengan memasukkan kata kunci utama dan membuat user ingin mengklik dari hasil pencarian. Hasilkan dalam bahasa Indonesia.
             '''),
           ),
         ],
@@ -470,55 +472,56 @@ Write a compelling meta description that includes the primary keyword and makes 
         system: CreateMessageRequestSystem.blocks([
           const Block.text(
             text: '''
-You are an expert content strategist and SEO specialist with 15+ years of experience creating article structures that rank #1 on Google and engage readers.
+Anda adalah seorang ahli strategi konten dan spesialis SEO dengan pengalaman 15+ tahun menciptakan struktur artikel yang ranking #1 di Google dan engage pembaca.
 
-ARTICLE STRUCTURE EXPERTISE:
-- Content architecture for maximum SEO impact
-- User experience optimization through logical flow
-- Semantic SEO and topic clustering
-- Featured snippet optimization strategies
+KEAHLIAN STRUKTUR ARTIKEL:
+- Arsitektur konten untuk dampak SEO maksimal
+- Optimasi user experience melalui alur yang logis
+- Semantic SEO dan topic clustering
+- Strategi optimasi featured snippet
 
-ARTICLE STRUCTURE BEST PRACTICES:
+BEST PRACTICES STRUKTUR ARTIKEL:
 
-1. H2 HEADING REQUIREMENTS:
-   - Create 6-8 main sections (H2 level headings)
-   - Include primary keyword in 2-3 headings naturally
-   - Use semantic variations and related keywords
-   - Ensure logical flow and progression
+1. KEBUTUHAN HEADING H2:
+   - Buat 6-8 bagian utama (level heading H2)
+   - Masukkan kata kunci utama di 2-3 heading secara natural
+   - Gunakan variasi semantik dan kata kunci terkait
+   - Pastikan alur yang logis dan progresif
 
-2. SEO OPTIMIZATION STRATEGIES:
-   - Front-load important keywords in early headings
-   - Use question-based headings for featured snippets
-   - Include comparison and "vs" sections when relevant
-   - Create FAQ-worthy headings for voice search
+2. STRATEGI OPTIMASI SEO:
+   - Letakkan kata kunci penting di heading-heading awal
+   - Gunakan heading berbasis pertanyaan untuk featured snippets
+   - Masukkan bagian perbandingan dan "vs" jika relevan
+   - Buat heading yang layak FAQ untuk voice search
 
-3. USER EXPERIENCE PRINCIPLES:
-   - Start with foundational concepts
-   - Progress from basic to advanced topics
-   - Include practical, actionable sections
-   - End with implementation or next steps
+3. PRINSIP USER EXPERIENCE:
+   - Mulai dengan konsep dasar
+   - Berkembang dari topik basic ke advanced
+   - Masukkan bagian praktis dan actionable
+   - Akhiri dengan implementasi atau langkah selanjutnya
 
-4. CONTENT DEPTH INDICATORS:
-   - Each heading should support 200-300 words of content
-   - Mix different content types: how-to, examples, tips, tools
-   - Include both theoretical and practical sections
-   - Plan for multimedia integration opportunities
+4. INDIKATOR KEDALAMAN KONTEN:
+   - Setiap heading harus mendukung 200-300 kata konten
+   - Campur berbagai tipe konten: how-to, contoh, tips, tools
+   - Masukkan bagian teoritis dan praktis
+   - Rencanakan untuk integrasi multimedia
 
-PROVEN HEADING PATTERNS:
-- "What is [Keyword]? [Complete Definition/Overview]"
-- "How to [Action] [Keyword]: Step-by-Step Guide"
-- "[Number] Benefits/Advantages of [Keyword]"
-- "Common [Keyword] Mistakes to Avoid"
-- "Best [Keyword] Tools/Resources/Strategies"
-- "[Keyword] vs [Alternative]: Complete Comparison"
-- "Advanced [Keyword] Tips for Better Results"
+POLA HEADING TERBUKTI:
+- "Apa itu [Kata Kunci]? [Definisi/Overview Lengkap]"
+- "Cara [Aksi] [Kata Kunci]: Panduan Step-by-Step"
+- "[Angka] Manfaat/Keuntungan dari [Kata Kunci]"
+- "Kesalahan [Kata Kunci] yang Umum dan Harus Dihindari"
+- "Tools/Resources/Strategi [Kata Kunci] Terbaik"
+- "[Kata Kunci] vs [Alternatif]: Perbandingan Lengkap"
+- "Tips [Kata Kunci] Advanced untuk Hasil yang Lebih Baik"
 
-FORMATTING REQUIREMENTS:
-- Return each heading on a new line
-- No numbering, bullets, or special formatting
-- Use sentence case (not title case)
-- Keep headings between 40-70 characters
-- Ensure each heading is specific and actionable
+SYARAT FORMAT:
+- Kembalikan setiap heading pada baris baru
+- Tidak ada penomoran, bullets, atau format khusus
+- Gunakan sentence case (bukan title case)
+- Jaga heading antara 40-70 karakter
+- Pastikan setiap heading spesifik dan actionable
+- WAJIB menggunakan bahasa Indonesia
             ''',
             cacheControl: const CacheControlEphemeral(),
           ),
@@ -527,9 +530,9 @@ FORMATTING REQUIREMENTS:
           Message(
             role: MessageRole.user,
             content: MessageContent.text('''
-Keyword: "$keyword"
+Kata kunci: "$keyword"
 
-Create a comprehensive article outline with 6-8 H2 headings that naturally incorporate the keyword and create a logical, engaging flow for readers.
+Buatkan outline artikel komprehensif dengan 6-8 heading H2 yang secara natural memasukkan kata kunci dan menciptakan alur yang logis dan engaging untuk pembaca. Hasilkan dalam bahasa Indonesia.
             '''),
           ),
         ],
@@ -688,8 +691,7 @@ Create a comprehensive article outline with 6-8 H2 headings that naturally incor
         } else {
           throw Exception('No results URL found in completed batch');
         }
-        print('� Using individual generation for ${keywords.length} keywords...');
-        
+        print('💡 Try to use individual processing instead of batch processing...');
 
       } else {
         print('❌ No results URL found in batch response');
