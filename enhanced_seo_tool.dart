@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
-import 'lib/content_brief_gen.dart' as keyword_research;
+import 'lib/keyword_generator.dart' as keyword_research;
 import 'lib/content_brief_generator.dart';
 import 'lib/word_document_generator.dart';
 
