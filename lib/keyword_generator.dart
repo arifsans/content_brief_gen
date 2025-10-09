@@ -31,6 +31,77 @@ const _baseBackoffMs = 1000;
 String _pickUserAgent() => _userAgents[Random().nextInt(_userAgents.length)];
 
 // ========================================================================
+// METRICS TRACKING
+// ========================================================================
+
+/// Metrics collector for keyword research operations
+class KeywordResearchMetrics {
+  int totalApiCalls = 0;
+  int successfulCalls = 0;
+  int failedCalls = 0;
+  int totalKeywordsFound = 0;
+  List<int> latenciesMs = [];
+  Map<String, int> sourceBreakdown = {
+    'google_autocomplete': 0,
+    'google_related': 0,
+    'people_also_ask': 0,
+    'bing_autocomplete': 0,
+    'duckduckgo_autocomplete': 0,
+  };
+  
+  void recordApiCall({
+    required String source,
+    required bool success,
+    required int latencyMs,
+    required int keywordsFound,
+  }) {
+    totalApiCalls++;
+    if (success) {
+      successfulCalls++;
+      sourceBreakdown[source] = (sourceBreakdown[source] ?? 0) + keywordsFound;
+    } else {
+      failedCalls++;
+    }
+    latenciesMs.add(latencyMs);
+    totalKeywordsFound += keywordsFound;
+  }
+  
+  Map<String, dynamic> getSummary() {
+    final avgLatency = latenciesMs.isEmpty ? 0 : latenciesMs.reduce((a, b) => a + b) / latenciesMs.length;
+    final successRate = totalApiCalls > 0 ? (successfulCalls / totalApiCalls * 100) : 0;
+    
+    return {
+      'total_api_calls': totalApiCalls,
+      'successful_calls': successfulCalls,
+      'failed_calls': failedCalls,
+      'success_rate_percent': successRate.toStringAsFixed(1),
+      'total_keywords_found': totalKeywordsFound,
+      'avg_latency_ms': avgLatency.toInt(),
+      'source_breakdown': sourceBreakdown,
+    };
+  }
+  
+  void printSummary() {
+    final summary = getSummary();
+    print('\n📊 KEYWORD RESEARCH METRICS:');
+    print('   Total API calls: ${summary['total_api_calls']}');
+    print('   Success rate: ${summary['success_rate_percent']}%');
+    print('   Total keywords found: ${summary['total_keywords_found']}');
+    print('   Avg latency: ${summary['avg_latency_ms']}ms');
+    print('\n📈 SOURCE BREAKDOWN:');
+    final breakdown = summary['source_breakdown'] as Map<String, int>;
+    breakdown.forEach((source, count) {
+      if (count > 0) {
+        print('   ${source.replaceAll('_', ' ').toUpperCase()}: $count keywords');
+      }
+    });
+  }
+}
+
+// Global instance for tracking
+final keywordMetrics = KeywordResearchMetrics();
+
+// ========================================================================
 // UTILITY FUNCTIONS
 // ========================================================================
 
@@ -144,6 +215,8 @@ Future<List<String>> fetchAutocomplete(String keyword) async {
     'https://suggestqueries.google.com/complete/search?client=chrome&hl=id&q=$encoded',
   );
 
+  final stopwatch = Stopwatch()..start();
+
   try {
     final res = await http.get(
       url,
@@ -153,16 +226,38 @@ Future<List<String>> fetchAutocomplete(String keyword) async {
       },
     ).timeout(Duration(seconds: _defaultTimeout));
 
+    stopwatch.stop();
+
     if (res.statusCode != 200) {
+      keywordMetrics.recordApiCall(
+        source: 'google_autocomplete',
+        success: false,
+        latencyMs: stopwatch.elapsedMilliseconds,
+        keywordsFound: 0,
+      );
       stderr.writeln('Warning: Google autocomplete HTTP ${res.statusCode}');
       return [];
     }
 
     final data = jsonDecode(res.body);
     if (data is List && data.length > 1 && data[1] is List) {
-      return List<String>.from(data[1].map((e) => e.toString()));
+      final results = List<String>.from(data[1].map((e) => e.toString()));
+      keywordMetrics.recordApiCall(
+        source: 'google_autocomplete',
+        success: true,
+        latencyMs: stopwatch.elapsedMilliseconds,
+        keywordsFound: results.length,
+      );
+      return results;
     }
   } catch (e) {
+    stopwatch.stop();
+    keywordMetrics.recordApiCall(
+      source: 'google_autocomplete',
+      success: false,
+      latencyMs: stopwatch.elapsedMilliseconds,
+      keywordsFound: 0,
+    );
     stderr.writeln('Google autocomplete error: ${e.toString().split('\n').first}');
   }
 

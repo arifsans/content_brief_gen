@@ -130,8 +130,11 @@ Future<void> main(List<String> args) async {
       exit(1);
     }
     
-    // Print performance metrics
-    briefGenerator.printMetrics();
+    // Print combined performance metrics
+    OptimizedContentBriefGenerator.printCombinedMetrics(
+      keywordMetrics: keyword_research.keywordMetrics.getSummary(),
+      briefMetrics: briefGenerator.getMetrics(),
+    );
 
     print('\n🎉 ALL PROCESSES COMPLETED!');
     print('📁 All results saved to: results/$timestampedFolder');

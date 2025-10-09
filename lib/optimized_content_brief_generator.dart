@@ -37,7 +37,7 @@ class ContentBrief {
 /// Config constants untuk optimasi
 class BriefConfig {
   // Token limits (dioptimasi untuk efisiensi)
-  static const int unifiedMaxTokens = 800; // Untuk generation unified
+  static const int unifiedMaxTokens = 1500; // Untuk generation unified (increased to prevent truncation)
   static const int fallbackMaxTokens = 150; // Untuk fallback individual
   
   // Retry settings
@@ -60,6 +60,9 @@ class MetricsCollector {
   int cacheHits = 0;
   double totalCostUSD = 0.0;
   List<int> latenciesMs = [];
+  int totalInputTokens = 0;
+  int totalOutputTokens = 0;
+  int totalCacheReadTokens = 0;
   
   void recordRequest({
     required bool success,
@@ -77,13 +80,21 @@ class MetricsCollector {
     
     latenciesMs.add(latencyMs);
     
-    // Calculate cost (Haiku pricing)
-    // Input: $0.25 per 1M tokens
-    // Output: $1.25 per 1M tokens
-    // Cache read: $0.03 per 1M tokens (90% cheaper)
-    final inputCost = (inputTokens / 1000000) * 0.25;
-    final outputCost = (outputTokens / 1000000) * 1.25;
-    final cacheSavings = cacheReadTokens != null ? (cacheReadTokens / 1000000) * 0.22 : 0;
+    // Track token usage
+    totalInputTokens += inputTokens;
+    totalOutputTokens += outputTokens;
+    if (cacheReadTokens != null) {
+      totalCacheReadTokens += cacheReadTokens;
+    }
+    
+    // Calculate cost (Claude Sonnet 4.5 pricing - March 2025)
+    // Input: $3.00 per 1M tokens
+    // Output: $15.00 per 1M tokens
+    // Cache write: $3.75 per 1M tokens (25% more than input)
+    // Cache read: $0.30 per 1M tokens (90% cheaper than input)
+    final inputCost = (inputTokens / 1000000) * 3.00;
+    final outputCost = (outputTokens / 1000000) * 15.00;
+    final cacheSavings = cacheReadTokens != null ? (cacheReadTokens / 1000000) * 2.70 : 0; // 3.00 - 0.30 = 2.70 savings
     
     totalCostUSD += (inputCost + outputCost - cacheSavings);
     
@@ -96,6 +107,8 @@ class MetricsCollector {
     final avgLatency = latenciesMs.isEmpty ? 0 : latenciesMs.reduce((a, b) => a + b) / latenciesMs.length;
     final successRate = totalRequests > 0 ? (successfulRequests / totalRequests * 100) : 0;
     final cacheHitRate = totalRequests > 0 ? (cacheHits / totalRequests * 100) : 0;
+    final totalTokens = totalInputTokens + totalOutputTokens;
+    final avgTokensPerRequest = totalRequests > 0 ? (totalTokens / totalRequests) : 0;
     
     return {
       'total_requests': totalRequests,
@@ -106,6 +119,11 @@ class MetricsCollector {
       'total_cost_usd': totalCostUSD.toStringAsFixed(4),
       'avg_latency_ms': avgLatency.toInt(),
       'estimated_savings_usd': ((cacheHits * 0.0001)).toStringAsFixed(4),
+      'total_input_tokens': totalInputTokens,
+      'total_output_tokens': totalOutputTokens,
+      'total_cache_read_tokens': totalCacheReadTokens,
+      'total_tokens': totalTokens,
+      'avg_tokens_per_request': avgTokensPerRequest.toInt(),
     };
   }
   
@@ -118,6 +136,12 @@ class MetricsCollector {
     print('   Total cost: \$${summary['total_cost_usd']}');
     print('   Avg latency: ${summary['avg_latency_ms']}ms');
     print('   Cache savings: \$${summary['estimated_savings_usd']}');
+    print('\n🔤 TOKEN USAGE:');
+    print('   Input tokens: ${summary['total_input_tokens']}');
+    print('   Output tokens: ${summary['total_output_tokens']}');
+    print('   Cache read tokens: ${summary['total_cache_read_tokens']}');
+    print('   Total tokens: ${summary['total_tokens']}');
+    print('   Avg tokens/request: ${summary['avg_tokens_per_request']}');
   }
 }
 
@@ -201,28 +225,28 @@ class OptimizedContentBriefGenerator {
       userPrompt = '''
 Keyword utama: "$keyword"
 
-Buatkan content brief SEO lengkap dengan format JSON berikut:
+Buatkan content brief SEO terupdate (E-E-A-T, helpful content, intent mapping, NLP, dsb.) lengkap dengan format JSON berikut:
 {
   "topic": "topik blog (max 80 char)",
   "title": "judul H1 (50-60 char)",
   "meta_description": "meta desc (150-160 char)",
   "article_structure": [
-    "Heading H2 pertama",
-    "Heading H2 kedua",
-    ... (6-8 heading)
+    "(JENIS HEADING. EX: H2) Heading pertama",
+    "(JENIS HEADING. EX: H3) Heading kedua",
+    ... ((JENIS HEADING. EX: H3) Heading ke-n)
   ],
   "related_keywords": [
     "keyword relevan 1",
     "keyword relevan 2",
-    ... (10-15 keywords)
+    ... (5 keywords)
   ]
 }
 
 PENTING: 
 - Response HANYA JSON, tanpa teks lain
-- JANGAN sertakan brand/merek tertentu di related_keywords
 - Fokus pada keywords umum dan informatif
 - Bahasa Indonesia
+- Pastikan JSON lengkap dan valid
 ''';
     } else {
       userPrompt = '''
@@ -247,7 +271,7 @@ PENTING: Response HANYA JSON, tanpa teks lain. Bahasa Indonesia.
 
     return await _anthropic.createMessage(
       request: CreateMessageRequest(
-        model: Model.modelId('claude-3-5-haiku-latest'),
+        model: Model.modelId('claude-sonnet-4-5-20250929'),
         maxTokens: BriefConfig.unifiedMaxTokens,
         system: CreateMessageRequestSystem.blocks([
           Block.text(
@@ -299,9 +323,9 @@ OUTPUT: JSON valid, Bahasa Indonesia.
   /// Detailed system prompt (fallback, original length)
   String _getDetailedSystemPrompt() {
     return '''
-Anda adalah seorang ahli SEO dengan spesialisasi content strategy untuk pasar Indonesia.
+Posisikan diri anda sebagai SEO content writer yang sudah berpengalaman menulis artikel dan membuat content planning lebih dari 10 tahun sesuai guide seo friendly terupdate.
 
-TUGAS: Buat content brief lengkap yang meliputi:
+TUGAS: Buat konten planning menggunakan bahasa indonesia yang natural dan edukatif dengan guide dibawah ini : 
 
 1. TOPIK BLOG:
    - Masukkan keyword utama secara natural
@@ -319,10 +343,10 @@ TUGAS: Buat content brief lengkap yang meliputi:
    - Value proposition yang jelas
    
 4. STRUKTUR ARTIKEL:
-   - 6-8 heading H2
-   - Keyword di 2-3 heading
+   - Memiliki H2, H3 sesuai SEO best practice
+   - Berikan keterangan tiap jenis heading
+   - Sesuaikan struktur dengan judul dan topik (Jika memiliki [angka], buat list berdasarkan jumlah angka tsb)
    - Flow logis dan engaging
-   - 40-70 karakter per heading
 
 FORMAT: JSON valid. BAHASA: Indonesia.
 ''';
@@ -339,15 +363,60 @@ FORMAT: JSON valid. BAHASA: Indonesia.
       final content = response.content.text;
       
       // Extract JSON dari response (handle markdown code blocks)
-      String jsonStr = content;
+      String jsonStr = content.trim();
+      
+      // Handle markdown code blocks with proper error checking
       if (content.contains('```json')) {
         final start = content.indexOf('```json') + 7;
         final end = content.indexOf('```', start);
-        jsonStr = content.substring(start, end).trim();
+        if (end != -1) {
+          jsonStr = content.substring(start, end).trim();
+        } else {
+          // Fallback: take everything after ```json and find JSON boundaries
+          final afterMarker = content.substring(start).trim();
+          final jsonStart = afterMarker.indexOf('{');
+          if (jsonStart != -1) {
+            jsonStr = afterMarker.substring(jsonStart);
+          } else {
+            jsonStr = afterMarker;
+          }
+        }
       } else if (content.contains('```')) {
         final start = content.indexOf('```') + 3;
         final end = content.indexOf('```', start);
-        jsonStr = content.substring(start, end).trim();
+        if (end != -1) {
+          jsonStr = content.substring(start, end).trim();
+        } else {
+          // Fallback: take everything after first ``` and find JSON boundaries
+          final afterMarker = content.substring(start).trim();
+          final jsonStart = afterMarker.indexOf('{');
+          if (jsonStart != -1) {
+            jsonStr = afterMarker.substring(jsonStart);
+          } else {
+            jsonStr = afterMarker;
+          }
+        }
+      }
+      
+      // Clean up JSON string - remove any trailing non-JSON content
+      if (jsonStr.startsWith('{')) {
+        // Find the end of the JSON object by counting braces
+        int braceCount = 0;
+        int jsonEnd = -1;
+        for (int i = 0; i < jsonStr.length; i++) {
+          if (jsonStr[i] == '{') {
+            braceCount++;
+          } else if (jsonStr[i] == '}') {
+            braceCount--;
+            if (braceCount == 0) {
+              jsonEnd = i + 1;
+              break;
+            }
+          }
+        }
+        if (jsonEnd != -1) {
+          jsonStr = jsonStr.substring(0, jsonEnd);
+        }
       }
       
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
@@ -377,7 +446,84 @@ FORMAT: JSON valid. BAHASA: Indonesia.
       
     } catch (e) {
       print('⚠️ Parsing error: $e');
-      print('📄 Raw response: ${response.content.text}');
+      print('📄 Raw response length: ${response.content.text.length}');
+      print('📄 Raw response preview: ${response.content.text.length > 200 ? response.content.text.substring(0, 200) + "..." : response.content.text}');
+      
+      // Try to extract any JSON-like content as a last resort
+      final content = response.content.text;
+      final jsonStart = content.indexOf('{');
+      final jsonEnd = content.lastIndexOf('}');
+      
+      if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+        try {
+          final emergencyJson = content.substring(jsonStart, jsonEnd + 1);
+          print('🔧 Attempting emergency JSON extraction...');
+          final data = jsonDecode(emergencyJson) as Map<String, dynamic>;
+          
+          // Use emergency parsed data
+          List<String> finalRelatedKeywords;
+          if (data.containsKey('related_keywords') && data['related_keywords'] is List) {
+            finalRelatedKeywords = (data['related_keywords'] as List)
+                .map((e) => e.toString())
+                .toList();
+          } else {
+            finalRelatedKeywords = relatedKeywords;
+          }
+          
+          print('✅ Emergency parsing successful!');
+          return ContentBrief(
+            keyword: keyword,
+            topic: data['topic'] as String? ?? 'Topic generation failed',
+            title: data['title'] as String? ?? 'Title generation failed',
+            metaDescription: data['meta_description'] as String? ?? 'Meta description generation failed',
+            articleStructure: (data['article_structure'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ?? ['Structure generation failed'],
+            relatedKeywords: finalRelatedKeywords,
+            generatedAt: DateTime.now(),
+          );
+        } catch (emergencyError) {
+          print('❌ Emergency parsing also failed: $emergencyError');
+          
+          // Final attempt: try to repair truncated JSON
+          try {
+            print('🔧 Attempting to repair truncated JSON...');
+            var repairedJson = content.substring(jsonStart);
+            
+            // Remove incomplete trailing elements
+            // Look for common truncation patterns
+            repairedJson = repairedJson
+                .replaceAll(RegExp(r',\s*"related_keywords"\s*:\s*\[.*$', dotAll: true), '')
+                .replaceAll(RegExp(r',\s*$'), '');
+            
+            // Ensure proper closing
+            if (!repairedJson.endsWith('}')) {
+              // Count open braces to determine how many to close
+              int openBraces = '{'.allMatches(repairedJson).length;
+              int closeBraces = '}'.allMatches(repairedJson).length;
+              repairedJson += '}' * (openBraces - closeBraces);
+            }
+            
+            final repairedData = jsonDecode(repairedJson) as Map<String, dynamic>;
+            
+            print('✅ JSON repair successful!');
+            return ContentBrief(
+              keyword: keyword,
+              topic: repairedData['topic'] as String? ?? 'Topic generation failed',
+              title: repairedData['title'] as String? ?? 'Title generation failed',
+              metaDescription: repairedData['meta_description'] as String? ?? 'Meta description generation failed',
+              articleStructure: (repairedData['article_structure'] as List?)
+                  ?.map((e) => e.toString())
+                  .toList() ?? ['Structure generation failed'],
+              relatedKeywords: relatedKeywords, // Use provided keywords since AI ones were truncated
+              generatedAt: DateTime.now(),
+            );
+          } catch (repairError) {
+            print('❌ JSON repair also failed: $repairError');
+          }
+        }
+      }
+      
       throw Exception('Failed to parse unified response: $e');
     }
   }
@@ -442,7 +588,7 @@ FORMAT: JSON valid. BAHASA: Indonesia.
     
     final response = await _anthropic.createMessage(
       request: CreateMessageRequest(
-        model: Model.modelId('claude-3-5-haiku-latest'),
+        model: Model.modelId('claude-sonnet-4-5-20250929'),
         maxTokens: BriefConfig.fallbackMaxTokens,
         messages: [
           Message(
@@ -585,6 +731,57 @@ ${brief.relatedKeywords.take(10).toList().asMap().entries.map((e) => '${e.key + 
   
   /// Print metrics summary
   void printMetrics() => metrics.printSummary();
+  
+  /// Print combined metrics (keyword research + content brief)
+  static void printCombinedMetrics({
+    required Map<String, dynamic> keywordMetrics,
+    required Map<String, dynamic> briefMetrics,
+  }) {
+    print('\n' + '=' * 60);
+    print('📊 COMBINED WORKFLOW METRICS');
+    print('=' * 60);
+    
+    // Keyword Research Section
+    print('\n🔍 KEYWORD RESEARCH PHASE:');
+    print('   API calls: ${keywordMetrics['total_api_calls']}');
+    print('   Success rate: ${keywordMetrics['success_rate_percent']}%');
+    print('   Keywords found: ${keywordMetrics['total_keywords_found']}');
+    print('   Avg latency: ${keywordMetrics['avg_latency_ms']}ms');
+    
+    // Content Brief Section
+    print('\n📝 CONTENT BRIEF GENERATION:');
+    print('   Total requests: ${briefMetrics['total_requests']}');
+    print('   Success rate: ${briefMetrics['success_rate_percent']}%');
+    print('   Cache hit rate: ${briefMetrics['cache_hit_rate_percent']}%');
+    print('   Avg latency: ${briefMetrics['avg_latency_ms']}ms');
+    
+    // Token Usage Section
+    print('\n🔤 TOKEN USAGE:');
+    print('   Input tokens: ${briefMetrics['total_input_tokens']}');
+    print('   Output tokens: ${briefMetrics['total_output_tokens']}');
+    print('   Cache read tokens: ${briefMetrics['total_cache_read_tokens']}');
+    print('   Total tokens: ${briefMetrics['total_tokens']}');
+    print('   Avg tokens/request: ${briefMetrics['avg_tokens_per_request']}');
+    
+    // Cost Section
+    print('\n💰 COST ANALYSIS:');
+    print('   Total cost: \$${briefMetrics['total_cost_usd']}');
+    print('   Cache savings: \$${briefMetrics['estimated_savings_usd']}');
+    
+    // Overall Stats
+    final totalApiCalls = (keywordMetrics['total_api_calls'] as int) + (briefMetrics['total_requests'] as int);
+    final totalTime = (keywordMetrics['avg_latency_ms'] as int) * (keywordMetrics['total_api_calls'] as int) + 
+                      (briefMetrics['avg_latency_ms'] as int) * (briefMetrics['total_requests'] as int);
+    final avgTime = totalApiCalls > 0 ? (totalTime / totalApiCalls).round() : 0;
+    
+    print('\n📈 WORKFLOW SUMMARY:');
+    print('   Total API calls: $totalApiCalls');
+    print('   Overall avg latency: ${avgTime}ms');
+    print('   Keywords found: ${keywordMetrics['total_keywords_found']}');
+    print('   Content briefs generated: ${briefMetrics['successful']}');
+    
+    print('=' * 60);
+  }
   
   void dispose() {
     // Cleanup if needed

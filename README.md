@@ -33,7 +33,7 @@ dart run enhanced_seo_tool.dart "your keyword" --brief
 - **DuckDuckGo Autocomplete** - Privacy-focused search engine data with SSL error handling
 
 ### 🤖 **AI-Powered Content Brief Generation (Indonesian Language)**
-- **Anthropic Claude Integration** - Advanced AI using Claude 3.5 Haiku for natural, SEO-optimized content in Indonesian
+- **Anthropic Claude Integration** - Advanced AI using Claude Sonnet 4.5 for natural, SEO-optimized content in Indonesian
 - **AI Title Generation** - Generates 5 SEO-friendly article titles with automatic brand filtering
 - **Interactive Title Selection** - Choose from AI-generated titles or input your own custom title  
 - **Brand-Free Keywords** - AI automatically generates 10-15 related keywords without brand contamination
