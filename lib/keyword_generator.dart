@@ -1,59 +1,160 @@
 import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html_parser;
 
-/// A small list of common user-agents to rotate
+// ========================================================================
+// CONFIGURATION & CONSTANTS
+// ========================================================================
+
+/// A small list of common user-agents to rotate for request diversity
 final _userAgents = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15',
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
 ];
 
+/// Network timeout constants (in seconds)
+const _defaultTimeout = 10;
+const _extendedTimeout = 15;
+const _shortTimeout = 6;
+
+/// Retry configuration
+const _maxRetries = 3;
+const _baseBackoffMs = 1000;
+
+/// Randomly select a user agent from the pool
 String _pickUserAgent() => _userAgents[Random().nextInt(_userAgents.length)];
 
+// ========================================================================
+// UTILITY FUNCTIONS
+// ========================================================================
+
 /// Utility: small randomized delay to reduce blocking risk
+/// 
+/// Adds human-like random delays between requests to avoid rate limiting.
+/// [minMs] minimum delay in milliseconds (default: 400)
+/// [maxMs] maximum delay in milliseconds (default: 1200)
 Future<void> _randomDelay({int minMs = 400, int maxMs = 1200}) async {
+  if (minMs < 0 || maxMs < minMs) {
+    throw ArgumentError('Invalid delay range: minMs=$minMs, maxMs=$maxMs');
+  }
   final ms = minMs + Random().nextInt((maxMs - minMs).clamp(0, 9999));
   await Future.delayed(Duration(milliseconds: ms));
 }
 
-/// Create timestamped directory for organizing results
-String createTimestampedFolder(String baseKeyword) {
-  final safeKeyword = baseKeyword.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
-  final now = DateTime.now();
+/// Execute an HTTP request with retry logic and exponential backoff
+/// 
+/// [makeRequest] function that performs the HTTP request
+/// [maxRetries] maximum number of retry attempts
+/// [operationName] descriptive name for logging purposes
+Future<http.Response?> _retryableRequest({
+  required Future<http.Response> Function() makeRequest,
+  int maxRetries = _maxRetries,
+  required String operationName,
+}) async {
+  for (var attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      final response = await makeRequest();
+      
+      if (response.statusCode == 200) {
+        return response;
+      } else if (response.statusCode == 429) {
+        // Rate limited - wait longer
+        stderr.writeln('$operationName: Rate limited (attempt ${attempt + 1}/$maxRetries)');
+        await Future.delayed(Duration(seconds: 2 + attempt * 2));
+        continue;
+      } else if (response.statusCode >= 500) {
+        // Server error - retry
+        stderr.writeln('$operationName: Server error ${response.statusCode} (attempt ${attempt + 1}/$maxRetries)');
+        await Future.delayed(Duration(seconds: 1 + attempt));
+        continue;
+      } else {
+        // Client error - don't retry
+        stderr.writeln('$operationName: HTTP ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      stderr.writeln('$operationName attempt ${attempt + 1}/$maxRetries error: ${e.toString().split('\n').first}');
+      if (attempt < maxRetries - 1) {
+        await Future.delayed(Duration(milliseconds: _baseBackoffMs + attempt * 500));
+      }
+    }
+  }
   
-  // Format: YYYY-MM-DD_HH-MM-SS_keyword
-  final year = now.year.toString();
-  final month = now.month.toString().padLeft(2, '0');
-  final day = now.day.toString().padLeft(2, '0');
-  final hour = now.hour.toString().padLeft(2, '0');
-  final minute = now.minute.toString().padLeft(2, '0');
-  final second = now.second.toString().padLeft(2, '0');
-  
-  final timestamp = '${year}-${month}-${day}_${hour}-${minute}-${second}';
-  final folderName = '${timestamp}_${safeKeyword.replaceAll(' ', '_')}';
-  
-  return folderName;
+  return null;
 }
 
-/// Phase 1: fetch autocomplete suggestions (public endpoint)
+// ========================================================================
+// FILE SYSTEM OPERATIONS
+// ========================================================================
+
+/// Create timestamped directory for organizing results
+/// 
+/// Format: YYYY-MM-DD_HH-MM-SS_keyword
+/// [baseKeyword] the main keyword to use in folder name
+/// Returns the folder name (not full path)
+String createTimestampedFolder(String baseKeyword) {
+  if (baseKeyword.isEmpty) {
+    throw ArgumentError('baseKeyword cannot be empty');
+  }
+  
+  final safeKeyword = baseKeyword
+      .replaceAll(RegExp(r'[^\w\s-]'), '')
+      .trim()
+      .replaceAll(RegExp(r'\s+'), '_');
+  
+  final now = DateTime.now();
+  
+  final timestamp = '${now.year}'
+      '-${now.month.toString().padLeft(2, '0')}'
+      '-${now.day.toString().padLeft(2, '0')}'
+      '_${now.hour.toString().padLeft(2, '0')}'
+      '-${now.minute.toString().padLeft(2, '0')}'
+      '-${now.second.toString().padLeft(2, '0')}';
+  
+  return '${timestamp}_$safeKeyword';
+}
+
+// ========================================================================
+// KEYWORD FETCHING FUNCTIONS
+// ========================================================================
+
+// ========================================================================
+// KEYWORD FETCHING FUNCTIONS
+// ========================================================================
+
+/// Phase 1: Fetch autocomplete suggestions from Google (public endpoint)
+/// 
+/// Uses Google's suggest API which provides autocomplete suggestions
+/// [keyword] the search term to get suggestions for
+/// Returns list of keyword suggestions
 Future<List<String>> fetchAutocomplete(String keyword) async {
+  if (keyword.trim().isEmpty) {
+    stderr.writeln('Warning: Empty keyword provided to fetchAutocomplete');
+    return [];
+  }
+
   final encoded = Uri.encodeQueryComponent(keyword);
   final url = Uri.parse(
     'https://suggestqueries.google.com/complete/search?client=chrome&hl=id&q=$encoded',
   );
 
   try {
-    final res = await http.get(url, headers: {
-      'User-Agent': _pickUserAgent(),
-      'Accept': 'application/json',
-    }).timeout(Duration(seconds: 10));
+    final res = await http.get(
+      url,
+      headers: {
+        'User-Agent': _pickUserAgent(),
+        'Accept': 'application/json',
+      },
+    ).timeout(Duration(seconds: _defaultTimeout));
 
     if (res.statusCode != 200) {
-      stderr.writeln('Warning: autocomplete HTTP ${res.statusCode}');
+      stderr.writeln('Warning: Google autocomplete HTTP ${res.statusCode}');
       return [];
     }
 
@@ -62,60 +163,70 @@ Future<List<String>> fetchAutocomplete(String keyword) async {
       return List<String>.from(data[1].map((e) => e.toString()));
     }
   } catch (e) {
-    stderr.writeln('Autocomplete fetch error: $e');
+    stderr.writeln('Google autocomplete error: ${e.toString().split('\n').first}');
   }
 
   return [];
 }
 
-/// Phase 2 (free): fetch "Related searches" + static suggestions from Google HTML
+/// Phase 2: Fetch "Related searches" suggestions from Google HTML
+/// 
+/// Scrapes Google search results page for related search suggestions
+/// Uses retry logic with exponential backoff
+/// [keyword] the search term to find related searches for
+/// Returns list of related keyword suggestions
 Future<List<String>> fetchRelatedSearches(String keyword) async {
+  if (keyword.trim().isEmpty) {
+    stderr.writeln('Warning: Empty keyword provided to fetchRelatedSearches');
+    return [];
+  }
+
   final query = Uri.encodeQueryComponent(keyword);
   final url = Uri.parse('https://www.google.com/search?q=$query&hl=id');
 
-  // Try a small number of retries in case of transient block
-  for (var attempt = 0; attempt < 3; attempt++) {
+  for (var attempt = 0; attempt < _maxRetries; attempt++) {
     try {
-      // small randomized delay before request
       await _randomDelay(minMs: 600, maxMs: 1400);
 
       final headers = {
         'User-Agent': _pickUserAgent(),
         'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Referer': 'https://www.google.com/',
       };
 
-      final res = await http.get(url, headers: headers).timeout(Duration(seconds: 12));
+      final res = await http
+          .get(url, headers: headers)
+          .timeout(Duration(seconds: 12));
+      
       if (res.statusCode != 200) {
-        stderr.writeln('Related search fetch: HTTP ${res.statusCode} (attempt ${attempt + 1})');
-        // small backoff
+        stderr.writeln('Related search fetch: HTTP ${res.statusCode} (attempt ${attempt + 1}/$_maxRetries)');
         await Future.delayed(Duration(seconds: 1 + attempt));
         continue;
       }
 
       final body = utf8.decode(res.bodyBytes);
       final doc = html_parser.parse(body);
-
       final results = <String>{};
 
-      // 1) Bottom related searches typically appear inside '#search' or in "Related searches" anchors.
-      // We can search for anchors whose href starts with "/search?" and appear near the bottom,
-      // but to be simple, grab visible anchor text that looks like short related queries.
-
+      // Strategy 1: Extract from search result links
       final anchors = doc.querySelectorAll('a');
       for (var a in anchors) {
         final href = a.attributes['href'] ?? '';
         final text = a.text.trim();
-        if (text.isEmpty) continue;
-
-        // heuristics: link to search results and not nav/footer or long text
-        if (href.startsWith('/search') && text.length < 100 && !_looksLikeUiLabel(text)) {
+        
+        if (text.isEmpty || text.length >= 100) continue;
+        
+        if (href.startsWith('/search') && !_looksLikeUiLabel(text)) {
           results.add(text);
         }
       }
 
-      // 2) Look specifically for "Related searches" section at bottom
-      final relatedSections = doc.querySelectorAll('[data-async-context*="related"], .related-question-pair, .s75CSd, .k8XOCe');
+      // Strategy 2: Look for "Related searches" sections
+      final relatedSections = doc.querySelectorAll(
+        '[data-async-context*="related"], .related-question-pair, .s75CSd, .k8XOCe'
+      );
+      
       for (var section in relatedSections) {
         final sectionAnchors = section.querySelectorAll('a');
         for (var a in sectionAnchors) {
@@ -126,37 +237,42 @@ Future<List<String>> fetchRelatedSearches(String keyword) async {
         }
       }
 
-      // 3) Some related queries are also inside elements with role="link" or span classes.
-      // Try to capture common related patterns: e.g., 'People also search for' items
-      final possible = doc.querySelectorAll('div, span, p');
-      for (var el in possible) {
-        final txt = el.text.trim();
-        if (txt.isEmpty) continue;
-
-        // a heuristic: related searches are usually compact phrases with <= 6 words
-        if (_isLikelyQuery(txt)) {
-          results.add(txt);
+      // Strategy 3: Extract query-like text from various elements
+      final possibleElements = doc.querySelectorAll('div, span, p');
+      for (var el in possibleElements) {
+        final text = el.text.trim();
+        if (text.isNotEmpty && _isLikelyQuery(text)) {
+          results.add(text);
         }
       }
 
-      // 4) Remove the original keyword if present as exact
+      // Remove the original keyword if present
       results.removeWhere((r) => _normalize(r) == _normalize(keyword));
 
-      // Convert Set to List and return
-      final list = results.toList();
-      return list;
+      return results.toList();
+      
     } catch (e) {
-      stderr.writeln('Related search attempt ${attempt + 1} error: $e');
-      await Future.delayed(Duration(milliseconds: 800 + attempt * 500));
+      stderr.writeln('Related search attempt ${attempt + 1} error: ${e.toString().split('\n').first}');
+      if (attempt < _maxRetries - 1) {
+        await Future.delayed(Duration(milliseconds: 800 + attempt * 500));
+      }
     }
   }
 
-  // failed after retries
   return [];
 }
 
 /// Phase 3: Extract People Also Ask questions from Google
+/// 
+/// Scrapes Google search results for "People Also Ask" questions
+/// [keyword] the search term to find PAA questions for
+/// Returns list of question strings
 Future<List<String>> fetchPeopleAlsoAsk(String keyword) async {
+  if (keyword.trim().isEmpty) {
+    stderr.writeln('Warning: Empty keyword provided to fetchPeopleAlsoAsk');
+    return [];
+  }
+
   final query = Uri.encodeQueryComponent(keyword);
   final url = Uri.parse('https://www.google.com/search?q=$query&hl=id');
 
@@ -167,9 +283,13 @@ Future<List<String>> fetchPeopleAlsoAsk(String keyword) async {
       'User-Agent': _pickUserAgent(),
       'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Referer': 'https://www.google.com/',
     };
 
-    final res = await http.get(url, headers: headers).timeout(Duration(seconds: 15));
+    final res = await http
+        .get(url, headers: headers)
+        .timeout(Duration(seconds: _extendedTimeout));
+    
     if (res.statusCode != 200) {
       stderr.writeln('People Also Ask fetch: HTTP ${res.statusCode}');
       return [];
@@ -179,12 +299,13 @@ Future<List<String>> fetchPeopleAlsoAsk(String keyword) async {
     final doc = html_parser.parse(body);
     final questions = <String>{};
 
-    // Look for People Also Ask questions in various possible containers
+    // Strategy 1: Common PAA selectors
     final paaSelectors = [
-      '[role="button"][jsname]', // Common PAA button selector
-      '[data-initq]', // Questions with data-initq attribute
-      '.related-question-pair', // Related question containers
-      '.g .s .st', // Sometimes questions appear in snippets
+      '[role="button"][jsname]',    // Common PAA button selector
+      '[data-initq]',                // Questions with data-initq attribute
+      '.related-question-pair',      // Related question containers
+      '.g .s .st',                   // Sometimes questions appear in snippets
+      '.JolIg',                      // Another PAA container class
     ];
 
     for (var selector in paaSelectors) {
@@ -197,38 +318,48 @@ Future<List<String>> fetchPeopleAlsoAsk(String keyword) async {
       }
     }
 
-    // Also search in divs and spans for text that looks like questions
-    final allDivs = doc.querySelectorAll('div, span, h3');
-    for (var div in allDivs) {
-      final text = div.text.trim();
+    // Strategy 2: Search for question-like text in various elements
+    final potentialQuestions = doc.querySelectorAll('div, span, h3');
+    for (var element in potentialQuestions) {
+      final text = element.text.trim();
       if (_isPeopleAlsoAskQuestion(text)) {
         questions.add(text);
       }
     }
 
-    // Remove duplicates and return
     return questions.toList();
+    
   } catch (e) {
-    stderr.writeln('People Also Ask fetch error: $e');
+    stderr.writeln('People Also Ask error: ${e.toString().split('\n').first}');
     return [];
   }
 }
 
 /// Phase 4: Fetch Bing autocomplete suggestions
+/// 
+/// Uses Bing's OpenSearch JSON API for autocomplete suggestions
+/// [keyword] the search term to get suggestions for
+/// Returns list of keyword suggestions
 Future<List<String>> fetchBingAutocomplete(String keyword) async {
+  if (keyword.trim().isEmpty) {
+    stderr.writeln('Warning: Empty keyword provided to fetchBingAutocomplete');
+    return [];
+  }
+
   final encoded = Uri.encodeQueryComponent(keyword);
-  final url = Uri.parse(
-    'https://api.bing.com/osjson.aspx?query=$encoded',
-  );
+  final url = Uri.parse('https://api.bing.com/osjson.aspx?query=$encoded');
 
   try {
     await _randomDelay(minMs: 500, maxMs: 1000);
     
-    final res = await http.get(url, headers: {
-      'User-Agent': _pickUserAgent(),
-      'Accept': 'application/json, text/javascript, */*; q=0.01',
-      'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-    }).timeout(Duration(seconds: 10));
+    final res = await http.get(
+      url,
+      headers: {
+        'User-Agent': _pickUserAgent(),
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+    ).timeout(Duration(seconds: _defaultTimeout));
 
     if (res.statusCode != 200) {
       stderr.writeln('Warning: Bing autocomplete HTTP ${res.statusCode}');
@@ -243,97 +374,134 @@ Future<List<String>> fetchBingAutocomplete(String keyword) async {
     
     return [];
   } catch (e) {
-    stderr.writeln('Bing autocomplete fetch error: $e');
+    stderr.writeln('Bing autocomplete error: ${e.toString().split('\n').first}');
     return [];
   }
 }
 
 /// Phase 5: Fetch DuckDuckGo autocomplete suggestions (alternative source)
+/// 
+/// Uses DuckDuckGo's autocomplete API with fallback mechanism
+/// [keyword] the search term to get suggestions for
+/// Returns list of keyword suggestions
 Future<List<String>> fetchDuckDuckGoAutocomplete(String keyword) async {
+  if (keyword.trim().isEmpty) {
+    stderr.writeln('Warning: Empty keyword provided to fetchDuckDuckGoAutocomplete');
+    return [];
+  }
+
   final encoded = Uri.encodeQueryComponent(keyword);
   
   try {
     await _randomDelay(minMs: 300, maxMs: 600);
     
-    // Use the simple direct search API with fallback
     final url = Uri.parse('https://duckduckgo.com/ac/?q=$encoded&type=list');
     
-    final res = await http.get(url, headers: {
-      'User-Agent': _pickUserAgent(),
-      'Accept': 'application/json, */*',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate',
-      'DNT': '1',
-      'Connection': 'keep-alive',
-      'Referer': 'https://duckduckgo.com/',
-    }).timeout(Duration(seconds: 6));
+    final res = await http.get(
+      url,
+      headers: {
+        'User-Agent': _pickUserAgent(),
+        'Accept': 'application/json, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Referer': 'https://duckduckgo.com/',
+      },
+    ).timeout(Duration(seconds: _shortTimeout));
 
     if (res.statusCode != 200) {
       return [];
     }
 
-    // Try to parse the response
     try {
       final data = jsonDecode(res.body);
       if (data is List && data.length > 1 && data[1] is List) {
         final suggestions = List<String>.from(data[1].map((e) => e.toString()));
-        return suggestions.where((s) => s.trim().isNotEmpty).take(10).toList();
+        return suggestions
+            .where((s) => s.trim().isNotEmpty)
+            .take(10)
+            .toList();
       }
-    } catch (parseError) {
-      // If JSON parsing fails, check if we got HTML (blocked request)
+    } on FormatException {
+      // JSON parsing failed - check if we got HTML (blocked request)
       if (res.body.trim().startsWith('<')) {
-        // DuckDuckGo is blocking - try alternative approach
         return await _fetchDuckDuckGoFallback(keyword);
       }
-      // For other parsing errors, return empty list
       return [];
     }
     
     return [];
+    
+  } on TimeoutException {
+    // Timeout - fail silently
+    return [];
   } catch (e) {
-    // Handle SSL and connection errors silently
+    // Handle SSL and other connection errors gracefully
     if (e.toString().contains('HandshakeException') || 
-        e.toString().contains('CERTIFICATE_VERIFY_FAILED')) {
-      // SSL issues - return empty list silently
-      return [];
-    } else if (e.toString().contains('TimeoutException')) {
-      // Timeout - return empty list silently  
-      return [];
-    } else {
-      // Log other errors but don't fail the whole process
-      stderr.writeln('DuckDuckGo autocomplete unavailable: ${e.toString().split('\n').first}');
+        e.toString().contains('CERTIFICATE_VERIFY_FAILED') ||
+        e.toString().contains('SocketException')) {
       return [];
     }
+    
+    stderr.writeln('DuckDuckGo unavailable: ${e.toString().split('\n').first}');
+    return [];
   }
 }
 
 /// Fallback method for DuckDuckGo when main API is blocked
+/// 
+/// Generates simple keyword variations when the API is unavailable
+/// [keyword] the base keyword
+/// Returns list of generated keyword variations
 Future<List<String>> _fetchDuckDuckGoFallback(String keyword) async {
   try {
-    // Generate simple variations as fallback when API is unavailable
     final fallbackSuggestions = <String>[];
     
-    // Basic word combinations
-    final commonModifiers = ['how to', 'best', 'types of', 'benefits of', 'guide', 'tips'];
+    // Common modifiers for keyword expansion
+    const commonModifiers = [
+      'how to',
+      'best',
+      'types of',
+      'benefits of',
+      'guide',
+      'tips'
+    ];
     
+    // Add modifier + keyword combinations
     for (final modifier in commonModifiers) {
       fallbackSuggestions.add('$modifier $keyword');
     }
     
-    // Add some common suffixes
-    final suffixes = ['guide', 'tips', 'benefits', 'review', 'comparison'];
+    // Common suffixes for keyword expansion
+    const suffixes = [
+      'guide',
+      'tips',
+      'benefits',
+      'review',
+      'comparison'
+    ];
+    
+    // Add keyword + suffix combinations
     for (final suffix in suffixes) {
       fallbackSuggestions.add('$keyword $suffix');
     }
     
-    // Return up to 5 fallback suggestions
     return fallbackSuggestions.take(5).toList();
   } catch (e) {
     return [];
   }
 }
 
-/// Very small heuristics helpers
+// ========================================================================
+// VALIDATION & FILTERING HELPERS
+// ========================================================================
+
+/// Check if text is likely a search query
+/// 
+/// Uses heuristics to determine if a text string represents a valid query
+/// [text] the text to validate
+/// Returns true if text appears to be a query
 bool _isLikelyQuery(String text) {
   final clean = text.trim();
 
@@ -352,6 +520,11 @@ bool _isLikelyQuery(String text) {
   return true;
 }
 
+/// Check if text is likely a People Also Ask question
+/// 
+/// Validates that text looks like a proper question
+/// [text] the text to validate
+/// Returns true if text appears to be a PAA question
 bool _isPeopleAlsoAskQuestion(String text) {
   final clean = text.trim();
   
@@ -371,22 +544,29 @@ bool _isPeopleAlsoAskQuestion(String text) {
   if (_looksLikeUiLabel(clean)) return false;
   
   // Reject common non-question patterns
-  final badPatterns = [
+  const badPatterns = [
     'click here',
     'read more',
     'see all',
     'view more',
     'show more',
     'load more',
+    'learn more',
   ];
   
-  for (var pattern in badPatterns) {
-    if (clean.toLowerCase().contains(pattern)) return false;
+  final lowerText = clean.toLowerCase();
+  for (final pattern in badPatterns) {
+    if (lowerText.contains(pattern)) return false;
   }
   
   return true;
 }
 
+/// Check if text looks like a UI label or navigation element
+/// 
+/// Filters out common UI/navigation text that isn't a real query
+/// [text] the text to check
+/// Returns true if text appears to be UI text
 bool _looksLikeUiLabel(String text) {
   final low = text.toLowerCase();
   const uiWords = [
@@ -408,15 +588,48 @@ bool _looksLikeUiLabel(String text) {
     'report',
     'open',
     'view',
-    'filter'
+    'filter',
+    'search',
+    'menu',
   ];
   return uiWords.any((word) => low.contains(word));
 }
 
-String _normalize(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+/// Normalize a string for comparison
+/// 
+/// Trims, lowercases, and normalizes whitespace
+/// [s] the string to normalize
+/// Returns normalized string
+/// Normalize a string for comparison
+/// 
+/// Trims, lowercases, and normalizes whitespace
+/// [s] the string to normalize
+/// Returns normalized string
+String _normalize(String s) => 
+    s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
 // Export the normalize function for use in other files
 String normalize(String s) => _normalize(s);
+
+// ========================================================================
+// KEYWORD CATEGORIZATION
+// ========================================================================
+
+/// Check if keyword is question-based
+/// 
+/// Determines if a keyword contains question indicators
+/// [keyword] the keyword to check
+/// Returns true if keyword appears to be a question
+bool _isQuestionKeyword(String keyword) {
+  final lower = keyword.toLowerCase();
+  const questionWords = [
+    'apa', 'bagaimana', 'mengapa', 'kapan', 'dimana', 'siapa', 'berapa',
+    'what', 'how', 'why', 'when', 'where', 'who', 'which', 'can', 'is', 'are',
+    'does', 'do', 'will', 'would'
+  ];
+  
+  return questionWords.any((word) => lower.contains(word)) || keyword.endsWith('?');
+}
 
 /// Categorize keywords based on their characteristics
 Map<String, List<String>> categorizeKeywords({
@@ -495,36 +708,48 @@ Map<String, List<String>> categorizeKeywords({
   return categories;
 }
 
-bool _isQuestionKeyword(String keyword) {
-  final lower = keyword.toLowerCase();
-  final questionWords = [
-    'apa', 'bagaimana', 'mengapa', 'kapan', 'dimana', 'siapa', 'berapa',
-    'what', 'how', 'why', 'when', 'where', 'who', 'which', 'can', 'is', 'are',
-    'does', 'do', 'will', 'would'
-  ];
-  
-  return questionWords.any((word) => lower.contains(word)) || keyword.endsWith('?');
-}
+// ========================================================================
+// REPORT GENERATION
+// ========================================================================
 
-Future<String> saveResults(String keyword, Map<String, List<String>> categorizedResults, List<String> allResults, {String? timestampedFolder}) async {
+/// Save keyword research results to a formatted text file
+/// 
+/// Creates a comprehensive report with categorized keywords
+/// [keyword] the target keyword that was researched
+/// [categorizedResults] keywords organized by category
+/// [allResults] complete list of all unique keywords
+/// [timestampedFolder] optional folder name (creates new if not provided)
+/// Returns the folder name where results were saved
+/// Save keyword research results to a formatted text file
+/// 
+/// Creates a comprehensive report with categorized keywords
+/// [keyword] the target keyword that was researched
+/// [categorizedResults] keywords organized by category
+/// [allResults] complete list of all unique keywords
+/// [timestampedFolder] optional folder name (creates new if not provided)
+/// Returns the folder name where results were saved
+Future<String> saveResults(
+  String keyword,
+  Map<String, List<String>> categorizedResults,
+  List<String> allResults, {
+  String? timestampedFolder,
+}) async {
   final now = DateTime.now();
   
   // Use provided timestamped folder or create a new one
   final folderName = timestampedFolder ?? createTimestampedFolder(keyword);
   
-  // Format date-time as dd-MMMM-yyyy HH:mm
-  final months = [
+  // Format date-time as dd-MMMM-yyyy HH:mm (Indonesian format)
+  const months = [
     '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
   
-  final day = now.day.toString().padLeft(2, '0');
-  final month = months[now.month];
-  final year = now.year.toString();
-  final hour = now.hour.toString().padLeft(2, '0');
-  final minute = now.minute.toString().padLeft(2, '0');
-  
-  final dateTime = '$day-$month-$year $hour:$minute';
+  final dateTime = '${now.day.toString().padLeft(2, '0')}'
+      '-${months[now.month]}'
+      '-${now.year} '
+      '${now.hour.toString().padLeft(2, '0')}'
+      ':${now.minute.toString().padLeft(2, '0')}';
   
   // Create timestamped results directory
   final resultsDir = Directory('results/$folderName');
@@ -533,35 +758,50 @@ Future<String> saveResults(String keyword, Map<String, List<String>> categorized
   final filename = '${resultsDir.path}/keyword_research_report.txt';
   final file = File(filename);
   
-  // Create content with header including date-time
+  // Build report content
   final content = StringBuffer();
+  
+  // Header
   content.writeln('📊 SEO KEYWORD RESEARCH REPORT');
-  content.writeln('${'=' * 50}');
+  content.writeln('=' * 50);
   content.writeln('Target Keyword: $keyword');
   content.writeln('Generated on: $dateTime');
   content.writeln('Total keywords found: ${allResults.length}');
-  content.writeln('${'=' * 50}');
-  content.writeln('');
+  content.writeln('=' * 50);
+  content.writeln();
   
-  // Add summary statistics
+  // Summary statistics
   content.writeln('📈 SUMMARY STATISTICS');
   content.writeln('-' * 30);
-  for (var entry in categorizedResults.entries) {
-    if (['Google Autocomplete', 'Related Searches', 'People Also Ask', 'Bing Suggestions', 'DuckDuckGo Suggestions'].contains(entry.key)) {
-      content.writeln('${entry.key}: ${entry.value.length} keywords');
+  
+  final sourceCategories = [
+    'Google Autocomplete',
+    'Related Searches',
+    'People Also Ask',
+    'Bing Suggestions',
+    'DuckDuckGo Suggestions'
+  ];
+  
+  for (final category in sourceCategories) {
+    final count = categorizedResults[category]?.length ?? 0;
+    if (count > 0) {
+      content.writeln('$category: $count keywords');
     }
   }
-  content.writeln('Long-tail Keywords (4+ words): ${categorizedResults['Long-tail Keywords']?.length ?? 0}');
-  content.writeln('Question-based Keywords: ${categorizedResults['Question Keywords']?.length ?? 0}');
-  content.writeln('');
   
-  // Add categorized results
+  content.writeln('Long-tail Keywords (4+ words): '
+      '${categorizedResults['Long-tail Keywords']?.length ?? 0}');
+  content.writeln('Question-based Keywords: '
+      '${categorizedResults['Question Keywords']?.length ?? 0}');
+  content.writeln();
+  
+  // Categorized results
   content.writeln('🎯 CATEGORIZED KEYWORDS');
-  content.writeln('${'=' * 50}');
+  content.writeln('=' * 50);
   
-  for (var entry in categorizedResults.entries) {
+  for (final entry in categorizedResults.entries) {
     if (entry.value.isNotEmpty) {
-      content.writeln('');
+      content.writeln();
       content.writeln('📂 ${entry.key.toUpperCase()} (${entry.value.length})');
       content.writeln('-' * (entry.key.length + 10));
       
@@ -571,38 +811,57 @@ Future<String> saveResults(String keyword, Map<String, List<String>> categorized
     }
   }
   
-  // Add complete list
-  content.writeln('');
+  // Complete keyword list
+  content.writeln();
   content.writeln('📋 COMPLETE KEYWORD LIST');
-  content.writeln('${'=' * 50}');
+  content.writeln('=' * 50);
+  
   for (var i = 0; i < allResults.length; i++) {
     content.writeln('${i + 1}. ${allResults[i]}');
   }
   
-  content.writeln('');
-  content.writeln('${'=' * 50}');
+  // Footer
+  content.writeln();
+  content.writeln('=' * 50);
   content.writeln('Generated by Enhanced SEO Keyword Research Tool');
-  content.writeln('Report includes: Google Autocomplete, Related Searches, People Also Ask, Bing Suggestions');
+  content.writeln('Data sources: Google, Bing, DuckDuckGo');
+  content.writeln('Includes: Autocomplete, Related Searches, People Also Ask');
   
+  // Write to file
   await file.writeAsString(content.toString());
+  
   stdout.writeln('💾 Saved comprehensive report to $filename');
   stdout.writeln('📁 Session folder: results/$folderName');
   
-  // Return the folder name for use in enhanced_seo_tool.dart
   return folderName;
 }
 
+// ========================================================================
+// MAIN FUNCTION (for standalone execution)
+// ========================================================================
+
+/// Main entry point for standalone keyword research
+/// 
+/// Run with: dart run lib/keyword_generator.dart "<keyword>"
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
-    print('Usage: dart run bin/content_brief_gen.dart "<keyword>"');
+    stderr.writeln('❌ Error: No keyword provided');
+    stderr.writeln('Usage: dart run lib/keyword_generator.dart "<keyword>"');
     exit(1);
   }
 
   final keyword = args.join(' ').trim();
-  stdout.writeln('🔍 Enhanced SEO Keyword Research for: "$keyword"\n');
+  
+  if (keyword.isEmpty) {
+    stderr.writeln('❌ Error: Keyword cannot be empty');
+    exit(1);
+  }
 
-  // Fetch from all sources
+  stdout.writeln('🔍 Enhanced SEO Keyword Research for: "$keyword"\n');
   stdout.writeln('🚀 Fetching from multiple sources...\n');
+
+  // Fetch from all sources with individual error handling
+  final stopwatch = Stopwatch()..start();
   
   final autocomplete = await fetchAutocomplete(keyword);
   stdout.writeln('✅ Google Autocomplete: ${autocomplete.length} results');
@@ -619,46 +878,29 @@ Future<void> main(List<String> args) async {
   final duckduckgoAutocomplete = await fetchDuckDuckGoAutocomplete(keyword);
   stdout.writeln('✅ DuckDuckGo Autocomplete: ${duckduckgoAutocomplete.length} results');
 
-  // Merge & dedupe, keep order: autocomplete first, then related, then PAA, then Bing, then DDG (unique)
+  // Merge & dedupe while maintaining order and uniqueness
   final combined = <String>[];
   final seen = <String>{};
 
-  // Add from each source while maintaining uniqueness
-  for (var s in autocomplete) {
-    final n = _normalize(s);
-    if (!seen.contains(n)) {
-      combined.add(s);
-      seen.add(n);
+  /// Helper function to add keywords from a source
+  void addFromSource(List<String> source) {
+    for (final keyword in source) {
+      final normalized = _normalize(keyword);
+      if (!seen.contains(normalized)) {
+        combined.add(keyword);
+        seen.add(normalized);
+      }
     }
   }
-  for (var s in related) {
-    final n = _normalize(s);
-    if (!seen.contains(n)) {
-      combined.add(s);
-      seen.add(n);
-    }
-  }
-  for (var s in peopleAlsoAsk) {
-    final n = _normalize(s);
-    if (!seen.contains(n)) {
-      combined.add(s);
-      seen.add(n);
-    }
-  }
-  for (var s in bingAutocomplete) {
-    final n = _normalize(s);
-    if (!seen.contains(n)) {
-      combined.add(s);
-      seen.add(n);
-    }
-  }
-  for (var s in duckduckgoAutocomplete) {
-    final n = _normalize(s);
-    if (!seen.contains(n)) {
-      combined.add(s);
-      seen.add(n);
-    }
-  }
+
+  // Add from each source (order determines priority)
+  addFromSource(autocomplete);
+  addFromSource(related);
+  addFromSource(peopleAlsoAsk);
+  addFromSource(bingAutocomplete);
+  addFromSource(duckduckgoAutocomplete);
+
+  stopwatch.stop();
 
   // Categorize keywords
   final categorized = categorizeKeywords(
@@ -669,13 +911,18 @@ Future<void> main(List<String> args) async {
     duckduckgoAutocomplete: duckduckgoAutocomplete,
   );
 
+  // Display summary
   stdout.writeln('\n📊 SUMMARY:');
   stdout.writeln('Total unique keywords: ${combined.length}');
   stdout.writeln('Long-tail keywords (4+ words): ${categorized['Long-tail Keywords']?.length ?? 0}');
   stdout.writeln('Question-based keywords: ${categorized['Question Keywords']?.length ?? 0}');
+  stdout.writeln('Processing time: ${stopwatch.elapsed.inSeconds}s');
 
+  // Display top results preview
   stdout.writeln('\n🎯 Top 10 Results:');
-  for (var i = 0; i < (combined.length > 10 ? 10 : combined.length); i++) {
+  final displayCount = combined.length > 10 ? 10 : combined.length;
+  
+  for (var i = 0; i < displayCount; i++) {
     stdout.writeln('${i + 1}. ${combined[i]}');
   }
 
@@ -683,6 +930,15 @@ Future<void> main(List<String> args) async {
     stdout.writeln('... and ${combined.length - 10} more keywords in the report');
   }
 
+  if (combined.isEmpty) {
+    stderr.writeln('\n⚠️  Warning: No keywords found. Try a different search term.');
+    exit(1);
+  }
+
+  // Save results
+  stdout.writeln();
   await saveResults(keyword, categorized, combined);
+  
   stdout.writeln('\n✨ Enhanced keyword research completed!');
+  stdout.writeln('Total time: ${stopwatch.elapsed.inSeconds}s');
 }

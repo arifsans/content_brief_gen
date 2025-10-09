@@ -40,7 +40,10 @@ Future<void> main(List<String> args) async {
 
   try {
     // Step 1: Run keyword research
-    print('📊 PHASE 1: KEYWORD RESEARCH');
+    if (generateBriefs) {
+      print('📊 PHASE 1: KEYWORD RESEARCH');
+    }
+    
     print('-' * 35);
     
     final keywordResults = await runKeywordResearch(keyword);
