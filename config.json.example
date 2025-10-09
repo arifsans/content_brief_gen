@@ -1,5 +1,20 @@
 {
   "anthropic_api_key": "sk-ant-your_anthropic_api_key_here",
-  "note": "Replace 'sk-ant-your_anthropic_api_key_here' with your actual Anthropic API key from https://console.anthropic.com/settings/keys",
-  "info": "API key must start with 'sk-ant-' for Anthropic Claude API"
+  "gemini_api_key": "your_gemini_api_key_here",
+  "note": "Configure at least one AI provider API key",
+  "providers": {
+    "anthropic": {
+      "info": "Get your API key from https://console.anthropic.com/settings/keys",
+      "format": "Must start with 'sk-ant-'"
+    },
+    "gemini": {
+      "info": "Get your API key from https://aistudio.google.com/app/apikey",
+      "format": "No specific prefix required"
+    }
+  },
+  "usage": {
+    "default": "dart run enhanced_seo_tool.dart 'keyword' --brief",
+    "anthropic": "dart run enhanced_seo_tool.dart 'keyword' --brief --provider=anthropic",
+    "gemini": "dart run enhanced_seo_tool.dart 'keyword' --brief --provider=gemini"
+  }
 }

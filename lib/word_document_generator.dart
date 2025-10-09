@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
-import 'optimized_content_brief_generator.dart';
+import 'ai_provider.dart';
 
 /// Word Document Generator for Content Briefs
 class WordDocumentGenerator {

@@ -1,17 +1,14 @@
 import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
-import 'package:anthropic_sdk_dart/anthropic_sdk_dart.dart';
+import 'package:googleai_dart/googleai_dart.dart';
 import 'ai_provider.dart';
 
-/// Model data untuk content brief yang dioptimalkan
-/// Using the shared ContentBrief class from ai_provider.dart
-
-/// Config constants untuk optimasi
-class BriefConfig {
-  // Token limits (dioptimasi untuk efisiensi)
-  static const int unifiedMaxTokens = 1500; // Untuk generation unified (increased to prevent truncation)
-  static const int fallbackMaxTokens = 150; // Untuk fallback individual
+/// Config constants for Gemini optimization
+class GeminiBriefConfig {
+  // Token limits
+  static const int unifiedMaxTokens = 1500;
+  static const int fallbackMaxTokens = 150;
   
   // Retry settings
   static const int maxRetries = 3;
@@ -21,28 +18,25 @@ class BriefConfig {
   // Rate limiting
   static const Duration minRequestDelay = Duration(milliseconds: 500);
   
-  // Prompt optimization
-  static const bool useOptimizedPrompts = false;
+  // Model selection
+  static const String model = 'gemini-2.5-flash-lite'; // Fast and efficient
 }
 
-/// Metrics collector untuk monitoring
-class MetricsCollector {
+/// Metrics collector for Gemini API calls
+class GeminiMetricsCollector {
   int totalRequests = 0;
   int successfulRequests = 0;
   int failedRequests = 0;
-  int cacheHits = 0;
   double totalCostUSD = 0.0;
   List<int> latenciesMs = [];
   int totalInputTokens = 0;
   int totalOutputTokens = 0;
-  int totalCacheReadTokens = 0;
   
   void recordRequest({
     required bool success,
     required int latencyMs,
     required int inputTokens,
     required int outputTokens,
-    int? cacheReadTokens,
   }) {
     totalRequests++;
     if (success) {
@@ -52,34 +46,20 @@ class MetricsCollector {
     }
     
     latenciesMs.add(latencyMs);
-    
-    // Track token usage
     totalInputTokens += inputTokens;
     totalOutputTokens += outputTokens;
-    if (cacheReadTokens != null) {
-      totalCacheReadTokens += cacheReadTokens;
-    }
     
-    // Calculate cost (Claude Sonnet 4.5 pricing - March 2025)
-    // Input: $3.00 per 1M tokens
-    // Output: $15.00 per 1M tokens
-    // Cache write: $3.75 per 1M tokens (25% more than input)
-    // Cache read: $0.30 per 1M tokens (90% cheaper than input)
-    final inputCost = (inputTokens / 1000000) * 3.00;
-    final outputCost = (outputTokens / 1000000) * 15.00;
-    final cacheSavings = cacheReadTokens != null ? (cacheReadTokens / 1000000) * 2.70 : 0; // 3.00 - 0.30 = 2.70 savings
-    
-    totalCostUSD += (inputCost + outputCost - cacheSavings);
-    
-    if (cacheReadTokens != null && cacheReadTokens > 0) {
-      cacheHits++;
-    }
+    // Calculate cost (Gemini 2.0 Flash pricing)
+    // Input: $0.075 per 1M tokens (up to 128k context)
+    // Output: $0.30 per 1M tokens
+    final inputCost = (inputTokens / 1000000) * 0.075;
+    final outputCost = (outputTokens / 1000000) * 0.30;
+    totalCostUSD += (inputCost + outputCost);
   }
   
   Map<String, dynamic> getSummary() {
     final avgLatency = latenciesMs.isEmpty ? 0 : latenciesMs.reduce((a, b) => a + b) / latenciesMs.length;
     final successRate = totalRequests > 0 ? (successfulRequests / totalRequests * 100) : 0;
-    final cacheHitRate = totalRequests > 0 ? (cacheHits / totalRequests * 100) : 0;
     final totalTokens = totalInputTokens + totalOutputTokens;
     final avgTokensPerRequest = totalRequests > 0 ? (totalTokens / totalRequests) : 0;
     
@@ -88,54 +68,49 @@ class MetricsCollector {
       'successful': successfulRequests,
       'failed': failedRequests,
       'success_rate_percent': successRate.toStringAsFixed(1),
-      'cache_hit_rate_percent': cacheHitRate.toStringAsFixed(1),
       'total_cost_usd': totalCostUSD.toStringAsFixed(4),
       'avg_latency_ms': avgLatency.toInt(),
-      'estimated_savings_usd': ((cacheHits * 0.0001)).toStringAsFixed(4),
       'total_input_tokens': totalInputTokens,
       'total_output_tokens': totalOutputTokens,
-      'total_cache_read_tokens': totalCacheReadTokens,
       'total_tokens': totalTokens,
       'avg_tokens_per_request': avgTokensPerRequest.toInt(),
+      'cache_hit_rate_percent': '0.0', // Gemini doesn't have prompt caching in the same way
+      'cache_read_tokens': 0,
+      'estimated_savings_usd': '0.0000',
     };
   }
   
   void printSummary() {
     final summary = getSummary();
-    print('\n📊 STATISTIK PERFORMANCE:');
+    print('\n📊 GEMINI PERFORMANCE STATISTICS:');
     print('   Total requests: ${summary['total_requests']}');
     print('   Success rate: ${summary['success_rate_percent']}%');
-    print('   Cache hit rate: ${summary['cache_hit_rate_percent']}%');
     print('   Total cost: \$${summary['total_cost_usd']}');
     print('   Avg latency: ${summary['avg_latency_ms']}ms');
-    print('   Cache savings: \$${summary['estimated_savings_usd']}');
     print('\n🔤 TOKEN USAGE:');
     print('   Input tokens: ${summary['total_input_tokens']}');
     print('   Output tokens: ${summary['total_output_tokens']}');
-    print('   Cache read tokens: ${summary['total_cache_read_tokens']}');
     print('   Total tokens: ${summary['total_tokens']}');
     print('   Avg tokens/request: ${summary['avg_tokens_per_request']}');
   }
 }
 
-/// Generator content brief yang dioptimalkan untuk production
-class OptimizedContentBriefGenerator implements AIContentBriefGenerator {
-  late final AnthropicClient _anthropic;
-  final MetricsCollector metrics = MetricsCollector();
+/// Gemini-based content brief generator
+class GeminiContentBriefGenerator implements AIContentBriefGenerator {
+  late final GoogleAIClient _gemini;
+  final GeminiMetricsCollector metrics = GeminiMetricsCollector();
   DateTime? _lastRequestTime;
   
-  OptimizedContentBriefGenerator({required String apiKey}) {
-    _anthropic = AnthropicClient(apiKey: apiKey);
+  GeminiContentBriefGenerator({required String apiKey}) {
+    _gemini = GoogleAIClient(apiKey: apiKey);
   }
 
-  /// Generate content brief dengan unified approach (1 API call)
-  /// Lebih efisien 75% dibanding 4 API calls terpisah
   @override
   Future<ContentBrief> generateContentBrief(
     String keyword,
     List<String> relatedKeywords,
   ) async {
-    print('🚀 Membuat content brief untuk: "$keyword"');
+    print('🚀 Creating content brief with Gemini for: "$keyword"');
     
     final stopwatch = Stopwatch()..start();
     
@@ -143,7 +118,7 @@ class OptimizedContentBriefGenerator implements AIContentBriefGenerator {
       // Rate limiting
       await _enforceRateLimit();
       
-      // Generate semua komponen dalam 1 call
+      // Generate all components in 1 call
       final response = await _callWithRetry(() => 
         _generateUnifiedBrief(keyword, relatedKeywords)
       );
@@ -157,12 +132,11 @@ class OptimizedContentBriefGenerator implements AIContentBriefGenerator {
       metrics.recordRequest(
         success: true,
         latencyMs: stopwatch.elapsedMilliseconds,
-        inputTokens: response.usage?.inputTokens ?? 0,
-        outputTokens: response.usage?.outputTokens ?? 0,
-        cacheReadTokens: response.usage?.cacheReadInputTokens,
+        inputTokens: 0, // Gemini doesn't expose token counts in response
+        outputTokens: 0,
       );
       
-      print('✅ Brief selesai dalam ${stopwatch.elapsedMilliseconds}ms');
+      print('✅ Brief completed in ${stopwatch.elapsedMilliseconds}ms');
       
       return brief;
       
@@ -177,22 +151,47 @@ class OptimizedContentBriefGenerator implements AIContentBriefGenerator {
       
       print('❌ Error: $e');
       
-      // Fallback ke individual generation jika unified gagal
-      print('🔄 Mencoba fallback generation...');
+      // Fallback to individual generation if unified fails
+      print('🔄 Trying fallback generation...');
       return await _generateWithFallback(keyword, relatedKeywords);
     }
   }
 
-  /// Generate unified brief dalam 1 API call (OPTIMIZED)
-  Future<Message> _generateUnifiedBrief(
+  /// Generate unified brief in 1 API call
+  Future<GenerateContentResponse> _generateUnifiedBrief(
     String keyword,
     List<String> relatedKeywords,
   ) async {
-    // Prompt yang diringkas untuk efisiensi token
-    final systemPrompt = BriefConfig.useOptimizedPrompts
-        ? _getOptimizedSystemPrompt()
-        : _getDetailedSystemPrompt();
-    
+    // System instruction for Gemini
+    final systemInstruction = '''
+Posisikan diri anda sebagai SEO content writer yang sudah berpengalaman menulis artikel dan membuat content planning lebih dari 10 tahun sesuai guide seo friendly terupdate.
+
+TUGAS: Buat konten planning menggunakan bahasa indonesia yang natural dan edukatif dengan guide dibawah ini : 
+
+1. TOPIK BLOG:
+   - Masukkan keyword utama secara natural
+   - Target user intent yang jelas
+   - 50-80 karakter
+   
+2. JUDUL H1:
+   - Optimasi SERP (50-60 karakter)
+   - Keyword di posisi depan
+   - Engaging dan clickable
+   
+3. META DESCRIPTION:
+   - 150-160 karakter total
+   - Keyword dalam 120 karakter pertama
+   - Value proposition yang jelas
+   
+4. STRUKTUR ARTIKEL:
+   - Memiliki H2, H3 sesuai SEO best practice
+   - Berikan keterangan tiap jenis heading
+   - Sesuaikan struktur dengan judul dan topik (Jika memiliki [angka], buat list berdasarkan jumlah angka tsb)
+   - Flow logis dan engaging
+
+FORMAT: JSON valid. BAHASA: Indonesia.
+''';
+
     // Build user prompt based on whether we have related keywords
     final String userPrompt;
     if (relatedKeywords.isEmpty) {
@@ -243,110 +242,45 @@ PENTING: Response HANYA JSON, tanpa teks lain. Bahasa Indonesia.
 ''';
     }
 
-    return await _anthropic.createMessage(
-      request: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
-        maxTokens: BriefConfig.unifiedMaxTokens,
-        system: CreateMessageRequestSystem.blocks([
-          Block.text(
-            text: systemPrompt,
-            cacheControl: const CacheControlEphemeral(),
-          ),
-        ]),
-        messages: [
-          Message(
-            role: MessageRole.user,
-            content: MessageContent.text(userPrompt),
+    final response = await _gemini.generateContent(
+      modelId: GeminiBriefConfig.model,
+      request: GenerateContentRequest(
+        contents: [
+          Content(
+            parts: [Part(text: systemInstruction + '\n\n' + userPrompt)],
           ),
         ],
+        generationConfig: GenerationConfig(
+          maxOutputTokens: GeminiBriefConfig.unifiedMaxTokens,
+          temperature: 0.7,
+          topP: 0.95,
+        ),
       ),
     );
+
+    return response;
   }
 
-  /// Optimized system prompt (300 tokens vs 900 tokens)
-  String _getOptimizedSystemPrompt() {
-    return '''
-Kamu adalah SEO expert untuk Indonesian market. Buat content brief yang:
-
-TOPIK:
-- Natural, tidak keyword stuffing
-- 50-80 karakter
-- Sesuai user intent (informational/commercial)
-
-JUDUL H1:
-- 50-60 karakter optimal untuk SERP
-- Kata kunci di depan
-- Engaging: gunakan angka, "Cara", "Panduan", "Tips"
-
-META DESCRIPTION:
-- 150-160 karakter
-- Kata kunci dalam 120 char pertama
-- Action words: Temukan, Pelajari, Kuasai
-- Value proposition jelas
-
-STRUKTUR ARTIKEL (6-8 H2):
-- Kata kunci utama di 2-3 heading
-- Flow logis: basic → advanced
-- Format: "Apa itu [X]", "Cara [X]", "[N] Tips [X]"
-- 40-70 char per heading
-
-OUTPUT: JSON valid, Bahasa Indonesia.
-''';
-  }
-
-  /// Detailed system prompt (fallback, original length)
-  String _getDetailedSystemPrompt() {
-    return '''
-Posisikan diri anda sebagai SEO content writer yang sudah berpengalaman menulis artikel dan membuat content planning lebih dari 10 tahun sesuai guide seo friendly terupdate.
-
-TUGAS: Buat konten planning menggunakan bahasa indonesia yang natural dan edukatif dengan guide dibawah ini : 
-
-1. TOPIK BLOG:
-   - Masukkan keyword utama secara natural
-   - Target user intent yang jelas
-   - 50-80 karakter
-   
-2. JUDUL H1:
-   - Optimasi SERP (50-60 karakter)
-   - Keyword di posisi depan
-   - Engaging dan clickable
-   
-3. META DESCRIPTION:
-   - 150-160 karakter total
-   - Keyword dalam 120 karakter pertama
-   - Value proposition yang jelas
-   
-4. STRUKTUR ARTIKEL:
-   - Memiliki H2, H3 sesuai SEO best practice
-   - Berikan keterangan tiap jenis heading
-   - Sesuaikan struktur dengan judul dan topik (Jika memiliki [angka], buat list berdasarkan jumlah angka tsb)
-   - Flow logis dan engaging
-
-FORMAT: JSON valid. BAHASA: Indonesia.
-''';
-  }
-
-  /// Parse unified response dari JSON
+  /// Parse unified response from JSON
   ContentBrief _parseUnifiedResponse(
-    Message response,
+    GenerateContentResponse response,
     String keyword,
     List<String> relatedKeywords,
   ) {
     try {
       // Get text content from response
-      final content = response.content.text;
+      final content = response.candidates?.first.content?.parts?.first.text ?? '';
       
-      // Extract JSON dari response (handle markdown code blocks)
+      // Extract JSON from response (handle markdown code blocks)
       String jsonStr = content.trim();
       
-      // Handle markdown code blocks with proper error checking
+      // Handle markdown code blocks
       if (content.contains('```json')) {
         final start = content.indexOf('```json') + 7;
         final end = content.indexOf('```', start);
         if (end != -1) {
           jsonStr = content.substring(start, end).trim();
         } else {
-          // Fallback: take everything after ```json and find JSON boundaries
           final afterMarker = content.substring(start).trim();
           final jsonStart = afterMarker.indexOf('{');
           if (jsonStart != -1) {
@@ -361,7 +295,6 @@ FORMAT: JSON valid. BAHASA: Indonesia.
         if (end != -1) {
           jsonStr = content.substring(start, end).trim();
         } else {
-          // Fallback: take everything after first ``` and find JSON boundaries
           final afterMarker = content.substring(start).trim();
           final jsonStart = afterMarker.indexOf('{');
           if (jsonStart != -1) {
@@ -374,7 +307,6 @@ FORMAT: JSON valid. BAHASA: Indonesia.
       
       // Clean up JSON string - remove any trailing non-JSON content
       if (jsonStr.startsWith('{')) {
-        // Find the end of the JSON object by counting braces
         int braceCount = 0;
         int jsonEnd = -1;
         for (int i = 0; i < jsonStr.length; i++) {
@@ -395,13 +327,13 @@ FORMAT: JSON valid. BAHASA: Indonesia.
       
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
       
-      // Use AI-generated related keywords if available, otherwise use provided ones
+      // Use AI-generated related keywords if available
       List<String> finalRelatedKeywords;
       if (data.containsKey('related_keywords') && data['related_keywords'] is List) {
         finalRelatedKeywords = (data['related_keywords'] as List)
             .map((e) => e.toString())
             .toList();
-        print('✨ AI generated ${finalRelatedKeywords.length} brand-free related keywords');
+        print('✨ Gemini generated ${finalRelatedKeywords.length} brand-free related keywords');
       } else {
         finalRelatedKeywords = relatedKeywords;
       }
@@ -416,16 +348,15 @@ FORMAT: JSON valid. BAHASA: Indonesia.
             .toList() ?? ['Structure generation failed'],
         relatedKeywords: finalRelatedKeywords,
         generatedAt: DateTime.now(),
-        provider: 'anthropic',
+        provider: 'gemini',
       );
       
     } catch (e) {
       print('⚠️ Parsing error: $e');
-      print('📄 Raw response length: ${response.content.text.length}');
-      print('📄 Raw response preview: ${response.content.text.length > 200 ? response.content.text.substring(0, 200) + "..." : response.content.text}');
+      print('📄 Raw response length: ${response.candidates?.first.content?.parts?.first.text?.length ?? 0}');
       
-      // Try to extract any JSON-like content as a last resort
-      final content = response.content.text;
+      // Try emergency JSON extraction
+      final content = response.candidates?.first.content?.parts?.first.text ?? '';
       final jsonStart = content.indexOf('{');
       final jsonEnd = content.lastIndexOf('}');
       
@@ -435,7 +366,6 @@ FORMAT: JSON valid. BAHASA: Indonesia.
           print('🔧 Attempting emergency JSON extraction...');
           final data = jsonDecode(emergencyJson) as Map<String, dynamic>;
           
-          // Use emergency parsed data
           List<String> finalRelatedKeywords;
           if (data.containsKey('related_keywords') && data['related_keywords'] is List) {
             finalRelatedKeywords = (data['related_keywords'] as List)
@@ -456,48 +386,10 @@ FORMAT: JSON valid. BAHASA: Indonesia.
                 .toList() ?? ['Structure generation failed'],
             relatedKeywords: finalRelatedKeywords,
             generatedAt: DateTime.now(),
-            provider: 'anthropic',
+            provider: 'gemini',
           );
         } catch (emergencyError) {
           print('❌ Emergency parsing also failed: $emergencyError');
-          
-          // Final attempt: try to repair truncated JSON
-          try {
-            print('🔧 Attempting to repair truncated JSON...');
-            var repairedJson = content.substring(jsonStart);
-            
-            // Remove incomplete trailing elements
-            // Look for common truncation patterns
-            repairedJson = repairedJson
-                .replaceAll(RegExp(r',\s*"related_keywords"\s*:\s*\[.*$', dotAll: true), '')
-                .replaceAll(RegExp(r',\s*$'), '');
-            
-            // Ensure proper closing
-            if (!repairedJson.endsWith('}')) {
-              // Count open braces to determine how many to close
-              int openBraces = '{'.allMatches(repairedJson).length;
-              int closeBraces = '}'.allMatches(repairedJson).length;
-              repairedJson += '}' * (openBraces - closeBraces);
-            }
-            
-            final repairedData = jsonDecode(repairedJson) as Map<String, dynamic>;
-            
-            print('✅ JSON repair successful!');
-            return ContentBrief(
-              keyword: keyword,
-              topic: repairedData['topic'] as String? ?? 'Topic generation failed',
-              title: repairedData['title'] as String? ?? 'Title generation failed',
-              metaDescription: repairedData['meta_description'] as String? ?? 'Meta description generation failed',
-              articleStructure: (repairedData['article_structure'] as List?)
-                  ?.map((e) => e.toString())
-                  .toList() ?? ['Structure generation failed'],
-              relatedKeywords: relatedKeywords, // Use provided keywords since AI ones were truncated
-              generatedAt: DateTime.now(),
-              provider: 'anthropic',
-            );
-          } catch (repairError) {
-            print('❌ JSON repair also failed: $repairError');
-          }
         }
       }
       
@@ -505,7 +397,7 @@ FORMAT: JSON valid. BAHASA: Indonesia.
     }
   }
 
-  /// Fallback generation jika unified gagal (individual calls)
+  /// Fallback generation if unified fails
   Future<ContentBrief> _generateWithFallback(
     String keyword,
     List<String> relatedKeywords,
@@ -513,7 +405,6 @@ FORMAT: JSON valid. BAHASA: Indonesia.
     print('🔄 Using fallback individual generation...');
     
     try {
-      // Generate components individually dengan prompt ringkas
       final topic = await _callWithRetry(() => 
         _generateComponent('topic', keyword, relatedKeywords)
       );
@@ -541,7 +432,7 @@ FORMAT: JSON valid. BAHASA: Indonesia.
             .toList(),
         relatedKeywords: relatedKeywords,
         generatedAt: DateTime.now(),
-        provider: 'anthropic',
+        provider: 'gemini',
       );
       
     } catch (e) {
@@ -550,7 +441,7 @@ FORMAT: JSON valid. BAHASA: Indonesia.
     }
   }
 
-  /// Generate single component (untuk fallback)
+  /// Generate single component (for fallback)
   Future<String> _generateComponent(
     String type,
     String keyword,
@@ -564,39 +455,41 @@ FORMAT: JSON valid. BAHASA: Indonesia.
       'structure': 'Buat 6-8 heading H2 untuk artikel tentang "$keyword". HANYA list heading (satu per baris), tanpa penjelasan.',
     };
     
-    final response = await _anthropic.createMessage(
-      request: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
-        maxTokens: BriefConfig.fallbackMaxTokens,
-        messages: [
-          Message(
-            role: MessageRole.user,
-            content: MessageContent.text(prompts[type]!),
+    final response = await _gemini.generateContent(
+      modelId: GeminiBriefConfig.model,
+      request: GenerateContentRequest(
+        contents: [
+          Content(
+            parts: [Part(text: prompts[type]!)],
           ),
         ],
+        generationConfig: GenerationConfig(
+          maxOutputTokens: GeminiBriefConfig.fallbackMaxTokens,
+          temperature: 0.7,
+        ),
       ),
     );
     
-    return response.content.text.trim();
+    return response.candidates?.first.content?.parts?.first.text?.trim() ?? '';
   }
 
-  /// Retry mechanism dengan exponential backoff
+  /// Retry mechanism with exponential backoff
   Future<T> _callWithRetry<T>(
     Future<T> Function() apiCall,
   ) async {
     int attempt = 0;
-    Duration delay = BriefConfig.initialRetryDelay;
+    Duration delay = GeminiBriefConfig.initialRetryDelay;
     
     while (true) {
       try {
         return await apiCall().timeout(
-          BriefConfig.maxTimeout,
+          GeminiBriefConfig.maxTimeout,
           onTimeout: () => throw TimeoutException('API call timeout'),
         );
       } catch (e) {
         attempt++;
         
-        if (attempt >= BriefConfig.maxRetries) {
+        if (attempt >= GeminiBriefConfig.maxRetries) {
           print('❌ Max retries reached. Last error: $e');
           rethrow;
         }
@@ -614,15 +507,14 @@ FORMAT: JSON valid. BAHASA: Indonesia.
   Future<void> _enforceRateLimit() async {
     if (_lastRequestTime != null) {
       final timeSinceLastRequest = DateTime.now().difference(_lastRequestTime!);
-      if (timeSinceLastRequest < BriefConfig.minRequestDelay) {
-        final waitTime = BriefConfig.minRequestDelay - timeSinceLastRequest;
+      if (timeSinceLastRequest < GeminiBriefConfig.minRequestDelay) {
+        final waitTime = GeminiBriefConfig.minRequestDelay - timeSinceLastRequest;
         await Future.delayed(waitTime);
       }
     }
     _lastRequestTime = DateTime.now();
   }
 
-  /// Save content brief dengan error handling
   @override
   Future<void> saveContentBrief(ContentBrief brief, {String? timestampedFolder}) async {
     try {
@@ -658,57 +550,6 @@ FORMAT: JSON valid. BAHASA: Indonesia.
   
   @override
   void printMetrics() => metrics.printSummary();
-  
-  /// Print combined metrics (keyword research + content brief)
-  static void printCombinedMetrics({
-    required Map<String, dynamic> keywordMetrics,
-    required Map<String, dynamic> briefMetrics,
-  }) {
-    print('\n' + '=' * 60);
-    print('📊 COMBINED WORKFLOW METRICS');
-    print('=' * 60);
-    
-    // Keyword Research Section
-    print('\n🔍 KEYWORD RESEARCH PHASE:');
-    print('   API calls: ${keywordMetrics['total_api_calls']}');
-    print('   Success rate: ${keywordMetrics['success_rate_percent']}%');
-    print('   Keywords found: ${keywordMetrics['total_keywords_found']}');
-    print('   Avg latency: ${keywordMetrics['avg_latency_ms']}ms');
-    
-    // Content Brief Section
-    print('\n📝 CONTENT BRIEF GENERATION:');
-    print('   Total requests: ${briefMetrics['total_requests']}');
-    print('   Success rate: ${briefMetrics['success_rate_percent']}%');
-    print('   Cache hit rate: ${briefMetrics['cache_hit_rate_percent']}%');
-    print('   Avg latency: ${briefMetrics['avg_latency_ms']}ms');
-    
-    // Token Usage Section
-    print('\n🔤 TOKEN USAGE:');
-    print('   Input tokens: ${briefMetrics['total_input_tokens']}');
-    print('   Output tokens: ${briefMetrics['total_output_tokens']}');
-    print('   Cache read tokens: ${briefMetrics['total_cache_read_tokens']}');
-    print('   Total tokens: ${briefMetrics['total_tokens']}');
-    print('   Avg tokens/request: ${briefMetrics['avg_tokens_per_request']}');
-    
-    // Cost Section
-    print('\n💰 COST ANALYSIS:');
-    print('   Total cost: \$${briefMetrics['total_cost_usd']}');
-    print('   Cache savings: \$${briefMetrics['estimated_savings_usd']}');
-    
-    // Overall Stats
-    final totalApiCalls = (keywordMetrics['total_api_calls'] as int) + (briefMetrics['total_requests'] as int);
-    final totalTime = (keywordMetrics['avg_latency_ms'] as int) * (keywordMetrics['total_api_calls'] as int) + 
-                      (briefMetrics['avg_latency_ms'] as int) * (briefMetrics['total_requests'] as int);
-    final avgTime = totalApiCalls > 0 ? (totalTime / totalApiCalls).round() : 0;
-    
-    print('\n📈 WORKFLOW SUMMARY:');
-    print('   Total API calls: $totalApiCalls');
-    print('   Overall avg latency: ${avgTime}ms');
-    print('   Keywords found: ${keywordMetrics['total_keywords_found']}');
-    print('   Content briefs generated: ${briefMetrics['successful']}');
-    
-    print('=' * 60);
-  }
   
   @override
   void dispose() {

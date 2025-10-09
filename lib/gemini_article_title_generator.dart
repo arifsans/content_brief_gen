@@ -1,18 +1,18 @@
-import 'package:anthropic_sdk_dart/anthropic_sdk_dart.dart';
+import 'package:googleai_dart/googleai_dart.dart';
 import 'ai_provider.dart';
 
-class ArticleTitleGenerator implements AIArticleTitleGenerator {
-  late final AnthropicClient _anthropic;
+class GeminiArticleTitleGenerator implements AIArticleTitleGenerator {
+  late final GoogleAIClient _gemini;
 
-  ArticleTitleGenerator({required String apiKey}) {
-    _anthropic = AnthropicClient(apiKey: apiKey);
+  GeminiArticleTitleGenerator({required String apiKey}) {
+    _gemini = GoogleAIClient(apiKey: apiKey);
   }
 
-  /// Generate SEO-friendly article titles from keyword list using AI
+  /// Generate SEO-friendly article titles from keyword list using Gemini AI
   /// The AI will automatically filter out brand-specific keywords
   @override
   Future<List<String>> generateArticleTitles(List<String> keywords) async {
-    print('🤖 Calling AI to generate SEO-friendly article titles...');
+    print('🤖 Calling Gemini AI to generate SEO-friendly article titles...');
     print('📊 Analyzing ${keywords.length} keywords...\n');
     
     try {
@@ -41,20 +41,22 @@ WAJIB menggunakan bahasa Indonesia.
 Pastikan judul tidak menyebutkan merek/brand tertentu.
 ''';
 
-      final response = await _anthropic.createMessage(
-        request: CreateMessageRequest(
-          model: Model.modelId('claude-sonnet-4-5-20250929'),
-          maxTokens: 600,
-          messages: [
-            Message(
-              role: MessageRole.user,
-              content: MessageContent.text(prompt),
+      final response = await _gemini.generateContent(
+        modelId: 'gemini-2.5-flash-lite',
+        request: GenerateContentRequest(
+          contents: [
+            Content(
+              parts: [Part(text: prompt)],
             ),
           ],
+          generationConfig: const GenerationConfig(
+            maxOutputTokens: 600,
+            temperature: 1,
+          ),
         ),
       );
 
-      final content = response.content.text;
+      final content = response.candidates?.first.content?.parts?.first.text ?? '';
       
       // Parse the response to extract titles
       final titles = content
@@ -80,17 +82,17 @@ Pastikan judul tidak menyebutkan merek/brand tertentu.
           })
           .toList();
       
-      print('✅ Generated ${titles.length} SEO-friendly article titles\n');
+      print('✅ Gemini generated ${titles.length} SEO-friendly article titles\n');
       
       return titles;
     } catch (e) {
-      print('❌ Error generating article titles: $e');
+      print('❌ Error generating article titles with Gemini: $e');
       return [];
     }
   }
 
   @override
   void dispose() {
-    // Cleanup if needed
+    _gemini.endSession();
   }
 }

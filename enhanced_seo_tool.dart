@@ -1,16 +1,20 @@
 import 'dart:io';
 import 'dart:convert';
 import 'lib/keyword_generator.dart' as keyword_research;
+import 'lib/ai_provider.dart';
 import 'lib/optimized_content_brief_generator.dart';
+import 'lib/gemini_content_brief_generator.dart';
 import 'lib/word_document_generator.dart';
 import 'lib/article_title_generator.dart';
+import 'lib/gemini_article_title_generator.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
-    print('Usage: dart run enhanced_seo_tool.dart "<keyword>" [--brief]');
+    print('Usage: dart run enhanced_seo_tool.dart "<keyword>" [--brief] [--provider=<anthropic|gemini>]');
     print('');
     print('Options:');
-    print('  --brief    Generate SEO content briefs with AI-powered title selection');
+    print('  --brief            Generate SEO content briefs with AI-powered title selection');
+    print('  --provider=<name>  Choose AI provider: anthropic (default) or gemini');
     print('');
     print('Flow with --brief:');
     print('  1. Keyword research from multiple sources');
@@ -21,16 +25,35 @@ Future<void> main(List<String> args) async {
     print('Examples:');
     print('  dart run enhanced_seo_tool.dart "cara membuat kopi"');
     print('  dart run enhanced_seo_tool.dart "cara membuat kopi" --brief');
-    print('  dart run enhanced_seo_tool.dart "bisnis online" --brief');
+    print('  dart run enhanced_seo_tool.dart "bisnis online" --brief --provider=gemini');
+    print('  dart run enhanced_seo_tool.dart "urutan skincare" --brief --provider=anthropic');
     exit(1);
   }
 
   final generateBriefs = args.contains('--brief');
+  
+  // Parse provider argument
+  AIProvider provider = AIProvider.anthropic; // default
+  for (final arg in args) {
+    if (arg.startsWith('--provider=')) {
+      final providerName = arg.substring('--provider='.length).toLowerCase();
+      if (providerName == 'gemini') {
+        provider = AIProvider.gemini;
+      } else if (providerName == 'anthropic') {
+        provider = AIProvider.anthropic;
+      } else {
+        print('❌ Invalid provider: $providerName. Use "anthropic" or "gemini".');
+        exit(1);
+      }
+    }
+  }
+  
   final keyword = args.where((arg) => !arg.startsWith('--')).join(' ').trim();
 
   print('🚀 Enhanced SEO Research & Content Brief Generator');
   print('${'=' * 55}');
   print('Target Keyword: "$keyword"');
+  print('AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude' : 'Google Gemini'}');
   if (generateBriefs) {
     print('Mode: Keyword Research → AI Title Generation → User Selection → Content Brief (Optimized)');
   } else {
@@ -56,14 +79,20 @@ Future<void> main(List<String> args) async {
       return;
     }
 
-    // Get Anthropic API key early
-    final apiKey = await getAnthropicApiKey();
+    // Get API key based on provider
+    final apiKey = await getApiKey(provider);
     if (apiKey == null || apiKey.isEmpty) {
-      print('❌ Anthropic API key not found!');
+      print('❌ ${provider == AIProvider.anthropic ? 'Anthropic' : 'Google Gemini'} API key not found!');
       print('Please set your API key in one of these ways:');
-      print('1. Environment variable: ANTHROPIC_API_KEY=your_key_here');
-      print('2. Create .env file with: ANTHROPIC_API_KEY=your_key_here');
-      print('3. Create config.json with: {"anthropic_api_key": "your_key_here"}');
+      if (provider == AIProvider.anthropic) {
+        print('1. Environment variable: ANTHROPIC_API_KEY=your_key_here');
+        print('2. Create .env file with: ANTHROPIC_API_KEY=your_key_here');
+        print('3. Create config.json with: {"anthropic_api_key": "your_key_here"}');
+      } else {
+        print('1. Environment variable: GEMINI_API_KEY=your_key_here');
+        print('2. Create .env file with: GEMINI_API_KEY=your_key_here');
+        print('3. Create config.json with: {"gemini_api_key": "your_key_here"}');
+      }
       exit(1);
     }
 
@@ -72,7 +101,15 @@ Future<void> main(List<String> args) async {
     print('-' * 55);
     
     final allKeywords = keywordResults['combined'] as List<String>;
-    final titleGenerator = ArticleTitleGenerator(apiKey: apiKey);
+    
+    // Create title generator based on provider
+    late AIArticleTitleGenerator titleGenerator;
+    if (provider == AIProvider.anthropic) {
+      titleGenerator = ArticleTitleGenerator(apiKey: apiKey);
+    } else {
+      titleGenerator = GeminiArticleTitleGenerator(apiKey: apiKey);
+    }
+    
     final generatedTitles = await titleGenerator.generateArticleTitles(allKeywords);
     
     print('✨ Generated ${generatedTitles.length} SEO-friendly article titles:\n');
@@ -94,7 +131,14 @@ Future<void> main(List<String> args) async {
     print('🚀 Using Optimized Unified Generation with Auto-Fallback...');
     print('💡 Single API call + Retry mechanism + Rate limiting\n');
 
-    final briefGenerator = OptimizedContentBriefGenerator(apiKey: apiKey);
+    // Create brief generator based on provider
+    late AIContentBriefGenerator briefGenerator;
+    if (provider == AIProvider.anthropic) {
+      briefGenerator = OptimizedContentBriefGenerator(apiKey: apiKey);
+    } else {
+      briefGenerator = GeminiContentBriefGenerator(apiKey: apiKey);
+    }
+    
     final wordGenerator = WordDocumentGenerator();
 
     // Use the selected title as the keyword for brief generation
@@ -131,10 +175,27 @@ Future<void> main(List<String> args) async {
     }
     
     // Print combined performance metrics
-    OptimizedContentBriefGenerator.printCombinedMetrics(
-      keywordMetrics: keyword_research.keywordMetrics.getSummary(),
-      briefMetrics: briefGenerator.getMetrics(),
-    );
+    if (provider == AIProvider.anthropic) {
+      OptimizedContentBriefGenerator.printCombinedMetrics(
+        keywordMetrics: keyword_research.keywordMetrics.getSummary(),
+        briefMetrics: briefGenerator.getMetrics(),
+      );
+    } else {
+      // For Gemini, print metrics separately (no static method needed)
+      print('\n' + '=' * 60);
+      print('📊 COMBINED WORKFLOW METRICS');
+      print('=' * 60);
+      
+      final keywordMetrics = keyword_research.keywordMetrics.getSummary();
+      print('\n🔍 KEYWORD RESEARCH PHASE:');
+      print('   API calls: ${keywordMetrics['total_api_calls']}');
+      print('   Success rate: ${keywordMetrics['success_rate_percent']}%');
+      print('   Keywords found: ${keywordMetrics['total_keywords_found']}');
+      print('   Avg latency: ${keywordMetrics['avg_latency_ms']}ms');
+      
+      briefGenerator.printMetrics();
+      print('=' * 60);
+    }
 
     print('\n🎉 ALL PROCESSES COMPLETED!');
     print('📁 All results saved to: results/$timestampedFolder');
@@ -147,15 +208,11 @@ Future<void> main(List<String> args) async {
     print('');
     print('💡 Process flow completed:');
     print('  ✅ Step 1: Keyword research from multiple sources');
-    print('  ✅ Step 2: AI-generated SEO-friendly article titles');
+    print('  ✅ Step 2: AI-generated SEO-friendly article titles (${provider == AIProvider.anthropic ? 'Claude' : 'Gemini'})');
     print('  ✅ Step 3: User selected article title');
-    print('  ✅ Step 4: Generated comprehensive content brief');
+    print('  ✅ Step 4: Generated comprehensive content brief (${provider == AIProvider.anthropic ? 'Claude' : 'Gemini'})');
     print('');
-    print('⚡ Performance optimizations:');
-    print('  • Unified generation (1 API call vs 4) = 54% cost savings');
-    print('  • Auto-retry with exponential backoff (99% reliability)');
-    print('  • Rate limiting protection (prevents API errors)');
-    print('  • Automatic fallback if unified fails (graceful degradation)');
+    print('⚡ AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude Sonnet 4' : 'Google Gemini 2.0 Flash'}');
 
   } catch (e) {
     print('\n❌ An error occurred: $e');
@@ -245,6 +302,45 @@ Future<Map<String, dynamic>> runKeywordResearch(String keyword) async {
     'duckduckgoAutocomplete': duckduckgoAutocomplete,
     'timestampedFolder': timestampedFolder,
   };
+}
+
+Future<String?> getApiKey(AIProvider provider) async {
+  final envVarName = provider == AIProvider.anthropic ? 'ANTHROPIC_API_KEY' : 'GEMINI_API_KEY';
+  final configKeyName = provider == AIProvider.anthropic ? 'anthropic_api_key' : 'gemini_api_key';
+  
+  // Try environment variable first
+  final envKey = Platform.environment[envVarName];
+  if (envKey != null && envKey.isNotEmpty) {
+    return envKey;
+  }
+
+  // Try .env file
+  final envFile = File('.env');
+  if (await envFile.exists()) {
+    final content = await envFile.readAsString();
+    final lines = content.split('\n');
+    for (final line in lines) {
+      if (line.startsWith('$envVarName=')) {
+        final key = line.substring('$envVarName='.length).trim();
+        if (key.isNotEmpty) return key;
+      }
+    }
+  }
+
+  // Try config.json file
+  final configFile = File('config.json');
+  if (await configFile.exists()) {
+    try {
+      final content = await configFile.readAsString();
+      final config = jsonDecode(content) as Map<String, dynamic>;
+      final key = config[configKeyName] as String?;
+      if (key != null && key.isNotEmpty) return key;
+    } catch (e) {
+      print('Error reading config.json: $e');
+    }
+  }
+
+  return null;
 }
 
 Future<String?> getAnthropicApiKey() async {
