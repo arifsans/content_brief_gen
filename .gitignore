@@ -35,6 +35,7 @@ content_briefs/
 *.log
 *.tmp
 *.temp
+seo-tool
 
 # Build & Compiled Files
 *.dll

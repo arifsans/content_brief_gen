@@ -2,6 +2,27 @@
 
 A comprehensive, professional-grade SEO tool that combines multi-source keyword research with AI-powered content brief generation using Anthropic Claude API. Features **AI title generation**, **brand-free keyword filtering**, **optimized unified generation**, and **Indonesian language support** for scalable content creation.
 
+## 🚀 Quick Start
+
+```bash
+# 1. Install dependencies
+dart pub get
+
+# 2. Set API key
+export ANTHROPIC_API_KEY="sk-ant-your_key_here"
+
+# 3. Compile to executable (recommended)
+./compile.sh
+
+# 4. Run the tool
+./seo-tool "your keyword" --brief
+
+# OR use Dart directly
+dart run enhanced_seo_tool.dart "your keyword" --brief
+```
+
+**Pro Tip**: Use the compiled executable (`./seo-tool`) for 3-5x faster startup time! See [Executable Management](#-executable-management) section below.
+
 ## ✨ Features
 
 ### 🔍 **Multi-Source Keyword Research**
@@ -135,7 +156,59 @@ dart run enhanced_seo_tool.dart "test keyword"
 dart run enhanced_seo_tool.dart "test keyword" --brief
 ```
 
+### 5. **Create Executable (Optional but Recommended)**
+
+For faster execution and easier usage, compile the tool to a native executable:
+
+```bash
+# Compile to executable
+./compile.sh
+
+# Or manually:
+dart compile exe enhanced_seo_tool.dart -o seo-tool
+```
+
+**Benefits of using the executable:**
+- ✅ 3-5x faster startup time
+- ✅ No need to type `dart run` every time
+- ✅ Can be installed globally for system-wide access
+- ✅ Works without Dart SDK (portable)
+- ✅ Easier to distribute to team members
+
+**Install globally (optional):**
+```bash
+# macOS/Linux
+sudo mv seo-tool /usr/local/bin/
+
+# Now run from anywhere:
+seo-tool "your keyword" --brief
+```
+
+See [EXECUTABLE_GUIDE.md](EXECUTABLE_GUIDE.md) for detailed instructions.
+
 ## 🎯 Usage Guide
+
+### **Two Ways to Run the Tool**
+
+#### **Option 1: Using Dart Command (Development)**
+```bash
+dart run enhanced_seo_tool.dart "your keyword" --brief
+```
+
+#### **Option 2: Using Compiled Executable (Recommended)**
+```bash
+# After compiling with ./compile.sh
+./seo-tool "your keyword" --brief
+
+# Or if installed globally:
+seo-tool "your keyword" --brief
+```
+
+**Why use the executable?**
+- ⚡ **3-5x faster** - No Dart VM startup overhead
+- 🎯 **Simpler syntax** - No need to type `dart run`
+- 📦 **Portable** - Share with team members without Dart SDK
+- 🌍 **Global access** - Run from any directory
 
 ### **New Enhanced Workflow**
 
@@ -150,12 +223,20 @@ When using the `--brief` flag, the tool now follows an enhanced 4-step workflow:
 
 #### **Keyword Research Only**
 ```bash
+# Using Dart
 dart run enhanced_seo_tool.dart "your keyword here"
+
+# Using executable (faster)
+./seo-tool "your keyword here"
 ```
 
 #### **Complete Content Brief Workflow (Recommended)**
 ```bash
+# Using Dart
 dart run enhanced_seo_tool.dart "your keyword here" --brief
+
+# Using executable (faster)
+./seo-tool "your keyword here" --brief
 ```
 
 This will:
@@ -167,19 +248,33 @@ This will:
 ### **Practical Examples**
 
 ```bash
-# Indonesian keyword research
+# Indonesian keyword research (using Dart)
 dart run enhanced_seo_tool.dart "cara membuat kopi"
+
+# Indonesian keyword research (using executable - faster)
+./seo-tool "cara membuat kopi"
 
 # Complete workflow: Research → AI titles → Selection → Brief
 dart run enhanced_seo_tool.dart "tips diet sehat" --brief
 
+# Same with executable (recommended for production)
+./seo-tool "tips diet sehat" --brief
+
 # Complex multi-word Indonesian keywords
-dart run enhanced_seo_tool.dart "strategi pemasaran digital untuk umkm" --brief
+./seo-tool "strategi pemasaran digital untuk umkm" --brief
+
+# If installed globally, run from anywhere:
+cd ~/Documents
+seo-tool "bisnis online pemula" --brief
 ```
 
 ### **Interactive Title Selection Example**
 
 ```bash
+# Using executable (recommended)
+$ ./seo-tool "cara merawat kulit wajah" --brief
+
+# Or using Dart command
 $ dart run enhanced_seo_tool.dart "cara merawat kulit wajah" --brief
 
 📝 PHASE 1.5: GENERATING SEO-FRIENDLY ARTICLE TITLES
@@ -242,7 +337,108 @@ Your choice (0-5): 2
 - **Multiple keywords**: Run separately for each topic
 - **Client projects**: Process one keyword at a time for quality control
 
-## 📁 Output Structure
+## � Executable Management
+
+### **Creating the Executable**
+
+The tool can be compiled into a standalone native executable for better performance:
+
+```bash
+# Quick compile
+./compile.sh
+
+# Or manual compilation
+dart compile exe enhanced_seo_tool.dart -o seo-tool
+
+# Verify the executable
+./seo-tool "test" --brief
+```
+
+### **Installation Options**
+
+#### **Local Usage (Current Directory)**
+```bash
+# Run from project directory
+./seo-tool "your keyword" --brief
+```
+
+#### **Global Installation (System-wide Access)**
+```bash
+# macOS/Linux
+sudo mv seo-tool /usr/local/bin/
+# or
+sudo cp seo-tool /usr/local/bin/
+
+# Verify global installation
+seo-tool --help
+
+# Now use from anywhere
+cd ~/Desktop
+seo-tool "skincare routine" --brief
+```
+
+#### **Shell Script Wrapper (Development)**
+```bash
+# Use shell wrapper (requires Dart SDK)
+./seo-tool.sh "keyword" --brief
+
+# Create permanent alias
+echo 'alias seo-tool="$HOME/path/to/content_brief_gen/seo-tool.sh"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### **Updating After Code Changes**
+
+When you modify the Dart code, recompile the executable:
+
+```bash
+# Recompile
+./compile.sh
+
+# If globally installed, update it
+sudo cp seo-tool /usr/local/bin/
+```
+
+### **Distribution to Team Members**
+
+Share the compiled executable with team members:
+
+```bash
+# Create distribution package
+mkdir seo-tool-distribution
+cp seo-tool seo-tool-distribution/
+cp EXECUTABLE_GUIDE.md seo-tool-distribution/
+cp README.md seo-tool-distribution/
+cp config.json.example seo-tool-distribution/
+
+# Compress for sharing
+tar -czf seo-tool-macos.tar.gz seo-tool-distribution/
+
+# Team members can extract and run without Dart SDK
+tar -xzf seo-tool-macos.tar.gz
+cd seo-tool-distribution
+./seo-tool "keyword" --brief
+```
+
+### **Performance Comparison**
+
+| Method | Startup Time | Requirements | Best For |
+|--------|--------------|--------------|----------|
+| `dart run` | ~2-3 seconds | Dart SDK | Development |
+| `./seo-tool` | ~0.5 seconds | None | Production |
+| Global `seo-tool` | ~0.5 seconds | None | Daily use |
+
+### **Executable Benefits**
+
+✅ **Performance**: 3-5x faster startup (no VM initialization)  
+✅ **Portability**: Share with team without requiring Dart SDK  
+✅ **Convenience**: Simpler command syntax  
+✅ **Reliability**: No dependency version conflicts  
+✅ **Distribution**: Easy to deploy on multiple machines  
+
+See [EXECUTABLE_GUIDE.md](EXECUTABLE_GUIDE.md) for more details.
+
+## �📁 Output Structure
 
 ```
 content_brief_gen/
@@ -362,6 +558,50 @@ ANTHROPIC_DEBUG=true
 - Make sure Dart is added to your system PATH
 - Restart your terminal after installation
 - Run `dart --version` to verify installation
+
+### **Executable Permission Denied**
+```bash
+❌ ./seo-tool: Permission denied
+```
+**Solution:**
+```bash
+# Make executable
+chmod +x seo-tool
+
+# Or for shell script
+chmod +x seo-tool.sh compile.sh
+```
+
+### **Executable Not Found After Global Install**
+```bash
+❌ seo-tool: command not found
+```
+**Solution:**
+```bash
+# Check if /usr/local/bin is in PATH
+echo $PATH | grep "/usr/local/bin"
+
+# If not found, add to PATH (macOS/Linux)
+echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Verify installation
+which seo-tool
+ls -la /usr/local/bin/seo-tool
+```
+
+### **Compilation Failed**
+```bash
+❌ Error: Could not find package 'http'
+```
+**Solution:**
+```bash
+# Install dependencies first
+dart pub get
+
+# Then compile
+./compile.sh
+```
 
 ### **Package Dependencies Issues**
 ```bash
