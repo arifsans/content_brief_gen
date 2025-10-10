@@ -76,7 +76,7 @@ class WordDocumentGenerator {
     // Article Structure Section
     content.write(_createHeading('ARTICLE STRUCTURE', 2));
     for (var i = 0; i < brief.articleStructure.length; i++) {
-      content.write(_createParagraph('${i + 1}. ${brief.articleStructure[i]}'));
+      content.write(_createParagraph('${brief.articleStructure[i]}'));
     }
     content.write(_createParagraph(''));
 

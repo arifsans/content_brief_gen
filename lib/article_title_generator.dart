@@ -36,7 +36,7 @@ KETENTUAN PENTING:
 6. Gunakan format yang engaging
 
 FORMAT OUTPUT:
-Berikan HANYA daftar judul (satu per baris), tanpa penomoran atau penjelasan tambahan.
+Berikan HANYA daftar judul (satu per baris), tanpa penomoran atau penjelasan tambahan, Langsung mulai dengan judul artikel pertama.
 WAJIB menggunakan bahasa Indonesia.
 Pastikan judul tidak menyebutkan merek/brand tertentu.
 ''';

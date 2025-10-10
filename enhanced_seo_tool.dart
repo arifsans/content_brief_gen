@@ -212,7 +212,7 @@ Future<void> main(List<String> args) async {
     print('  ✅ Step 3: User selected article title');
     print('  ✅ Step 4: Generated comprehensive content brief (${provider == AIProvider.anthropic ? 'Claude' : 'Gemini'})');
     print('');
-    print('⚡ AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude Sonnet 4' : 'Google Gemini 2.0 Flash'}');
+    print('⚡ AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude Sonnet 4' : 'Google Gemini 2.5 Flash Lite'}');
 
   } catch (e) {
     print('\n❌ An error occurred: $e');

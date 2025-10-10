@@ -109,12 +109,12 @@ Optimal: ${metaDescription.length >= 150 && metaDescription.length <= 160 ? '✅
 ───────────────────────────────────────────────────────────────
 STRUKTUR ARTIKEL (${articleStructure.length} Headings)
 ───────────────────────────────────────────────────────────────
-${articleStructure.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
+${articleStructure.asMap().entries.map((e) => '${e.value}').join('\n')}
 
 ───────────────────────────────────────────────────────────────
 RELATED KEYWORDS (Top 10)
 ───────────────────────────────────────────────────────────────
-${relatedKeywords.take(10).toList().asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}
+${relatedKeywords.take(10).toList().asMap().entries.map((e) => '${e.value}').join('\n')}
 
 ═══════════════════════════════════════════════════════════════
                         END OF BRIEF

@@ -205,14 +205,13 @@ Buatkan content brief SEO terupdate (E-E-A-T, helpful content, intent mapping, N
   "title": "judul H1 (50-60 char)",
   "meta_description": "meta desc (150-160 char)",
   "article_structure": [
-    "(JENIS HEADING. EX: H2) Heading pertama",
-    "(JENIS HEADING. EX: H3) Heading kedua",
-    ... ((JENIS HEADING. EX: H3) Heading ke-n)
+    "(H2) Heading pertama",
+    "(H3) Heading kedua",
+    "(H2) Heading ketiga"
   ],
   "related_keywords": [
     "keyword relevan 1",
-    "keyword relevan 2",
-    ... (5 keywords)
+    "keyword relevan 2"
   ]
 }
 
@@ -233,9 +232,9 @@ Buatkan content brief SEO lengkap dengan format JSON berikut:
   "title": "judul H1 (50-60 char)",
   "meta_description": "meta desc (150-160 char)",
   "article_structure": [
-    "Heading H2 pertama",
-    "Heading H2 kedua",
-    ... (6-8 heading)
+    "(H2) Heading pertama",
+    "(H3) Sub-heading pertama",
+    "(H2) Heading kedua"
   ]
 }
 
@@ -558,10 +557,10 @@ FORMAT: JSON valid. BAHASA: Indonesia.
     {String? context}
   ) async {
     final prompts = {
-      'topic': 'Buat topik blog SEO-friendly (max 80 char) untuk keyword "$keyword". HANYA topik, tanpa penjelasan.',
-      'title': 'Buat judul H1 (50-60 char) untuk keyword "$keyword". HANYA judul, tanpa penjelasan.',
-      'meta': 'Buat meta description (150-160 char) untuk keyword "$keyword". HANYA meta desc, tanpa penjelasan.',
-      'structure': 'Buat 6-8 heading H2 untuk artikel tentang "$keyword". HANYA list heading (satu per baris), tanpa penjelasan.',
+      'topic': 'Posisikan diri anda sebagai SEO content writer yang sudah berpengalaman menulis artikel dan membuat content planning lebih dari 10 tahun sesuai guide seo friendly terupdate. \n\n Buat topik blog SEO-friendly (max 80 char) untuk keyword "$keyword". HANYA topik, tanpa penjelasan.',
+      'title': 'Posisikan diri anda sebagai SEO content writer yang sudah berpengalaman menulis artikel dan membuat content planning lebih dari 10 tahun sesuai guide seo friendly terupdate. \n\n Buat judul H1 (50-60 char) untuk keyword "$keyword". HANYA judul, tanpa penjelasan.',
+      'meta': 'Posisikan diri anda sebagai SEO content writer yang sudah berpengalaman menulis artikel dan membuat content planning lebih dari 10 tahun sesuai guide seo friendly terupdate. \n\n Buat meta description (150-160 char) untuk keyword "$keyword". HANYA meta desc, tanpa penjelasan.',
+      'structure': 'Posisikan diri anda sebagai SEO content writer yang sudah berpengalaman menulis artikel dan membuat content planning lebih dari 10 tahun sesuai guide seo friendly terupdate. \n\n Buat struktur artikel tentang "$keyword" dengan mengikuti langkah berikut: 1. Memiliki H2, H3 sesuai SEO best practice, 2.Berikan keterangan tiap jenis heading, 3.Sesuaikan struktur dengan judul dan topik (Jika memiliki [angka], buat list berdasarkan jumlah angka tsb), 4.Flow logis dan engaging,. HANYA list heading (satu per baris), tanpa penjelasan. dengan contoh format (H2) Pendahuluan / (H3) Subtopik pertama',
     };
     
     final response = await _anthropic.createMessage(
