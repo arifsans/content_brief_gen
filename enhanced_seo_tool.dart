@@ -9,52 +9,45 @@ import 'lib/article_title_generator.dart';
 import 'lib/gemini_article_title_generator.dart';
 
 Future<void> main(List<String> args) async {
-  if (args.isEmpty) {
-    print('Usage: dart run enhanced_seo_tool.dart "<keyword>" [--brief] [--provider=<anthropic|gemini>]');
-    print('');
-    print('Options:');
-    print('  --brief            Generate SEO content briefs with AI-powered title selection');
-    print('  --provider=<name>  Choose AI provider: anthropic (default) or gemini');
-    print('');
-    print('Flow with --brief:');
-    print('  1. Keyword research from multiple sources');
-    print('  2. AI generates SEO-friendly article titles (excluding brands)');
-    print('  3. User selects a title or inputs custom title');
-    print('  4. Generate comprehensive content brief (optimized with auto-fallback)');
-    print('');
-    print('Examples:');
-    print('  dart run enhanced_seo_tool.dart "cara membuat kopi"');
-    print('  dart run enhanced_seo_tool.dart "cara membuat kopi" --brief');
-    print('  dart run enhanced_seo_tool.dart "bisnis online" --brief --provider=gemini');
-    print('  dart run enhanced_seo_tool.dart "urutan skincare" --brief --provider=anthropic');
+  print('🚀 Enhanced SEO Research & Content Brief Generator');
+  print('${'=' * 55}\n');
+
+  // Get keyword from user
+  print('📝 Enter your target keyword:');
+  stdout.write('Keyword: ');
+  final keyword = stdin.readLineSync()?.trim() ?? '';
+  
+  if (keyword.isEmpty) {
+    print('❌ Keyword cannot be empty!');
     exit(1);
   }
 
-  final generateBriefs = args.contains('--brief');
+  // Ask if user wants to generate content brief
+  print('\n📋 Do you want to generate content brief?');
+  print('1. Yes - Full workflow (Keyword Research → Title Generation → Content Brief)');
+  print('2. No - Keyword Research Only');
+  stdout.write('\nYour choice (1-2): ');
   
-  // Parse provider argument
-  AIProvider provider = AIProvider.anthropic; // default
-  for (final arg in args) {
-    if (arg.startsWith('--provider=')) {
-      final providerName = arg.substring('--provider='.length).toLowerCase();
-      if (providerName == 'gemini') {
-        provider = AIProvider.gemini;
-      } else if (providerName == 'anthropic') {
-        provider = AIProvider.anthropic;
-      } else {
-        print('❌ Invalid provider: $providerName. Use "anthropic" or "gemini".');
-        exit(1);
-      }
-    }
-  }
-  
-  final keyword = args.where((arg) => !arg.startsWith('--')).join(' ').trim();
+  final briefChoice = getUserNumberInput(1, 2);
+  final generateBriefs = briefChoice == 1;
 
-  print('🚀 Enhanced SEO Research & Content Brief Generator');
+  // Ask user to select AI provider (only if generating brief)
+  AIProvider provider = AIProvider.anthropic;
+  if (generateBriefs) {
+    print('\n🤖 Select AI Provider:');
+    print('1. Anthropic Claude (Default)');
+    print('2. Google Gemini');
+    stdout.write('\nYour choice (1-2): ');
+    
+    final providerChoice = getUserNumberInput(1, 2);
+    provider = providerChoice == 1 ? AIProvider.anthropic : AIProvider.gemini;
+  }
+
+  print('\n🚀 Enhanced SEO Research & Content Brief Generator');
   print('${'=' * 55}');
   print('Target Keyword: "$keyword"');
-  print('AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude' : 'Google Gemini'}');
   if (generateBriefs) {
+    print('AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude' : 'Google Gemini'}');
     print('Mode: Keyword Research → AI Title Generation → User Selection → Content Brief (Optimized)');
   } else {
     print('Mode: Keyword Research Only');
@@ -377,6 +370,34 @@ Future<String?> getAnthropicApiKey() async {
   }
 
   return null;
+}
+
+/// Get user's number input within a range
+int getUserNumberInput(int min, int max) {
+  while (true) {
+    final input = stdin.readLineSync()?.trim();
+    
+    if (input == null || input.isEmpty) {
+      print('❌ Invalid input. Please try again.');
+      stdout.write('\nYour choice ($min-$max): ');
+      continue;
+    }
+    
+    final choice = int.tryParse(input);
+    
+    if (choice == null) {
+      print('❌ Please enter a valid number.');
+      stdout.write('\nYour choice ($min-$max): ');
+      continue;
+    }
+    
+    if (choice >= min && choice <= max) {
+      return choice;
+    }
+    
+    print('❌ Invalid choice. Please select a number between $min and $max.');
+    stdout.write('\nYour choice ($min-$max): ');
+  }
 }
 
 /// Get user's selected title from generated list or allow manual input

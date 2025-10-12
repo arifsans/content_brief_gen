@@ -51,7 +51,7 @@ Pastikan judul tidak menyebutkan merek/brand tertentu.
           ],
           generationConfig: const GenerationConfig(
             maxOutputTokens: 600,
-            temperature: 1,
+            temperature: 0.6,
           ),
         ),
       );

@@ -1,5 +1,110 @@
 # Changelog - Enhanced SEO Tool
 
+All notable changes to the Enhanced SEO Tool project will be documented in this file.
+
+## Version History
+
+- **v3.2** (Oct 12, 2025) - Interactive Input Mode
+- **v3.1** (Oct 9, 2025) - Dual AI Provider Support
+- **v3.0** (Oct 8, 2025) - Optimized Content Brief Generator
+- **v2.3** (Oct 7, 2025) - Brand-Free Keyword Generation
+- **v2.2** (Oct 7, 2025) - AI Title Generation & Selection
+- **v2.1** (Oct 7, 2025) - Content Brief Generation
+- **v2.0** (Oct 6, 2025) - Multi-Source Keyword Research
+- **v1.0** (Earlier) - Initial Release
+
+---
+
+## Version 3.2 - Interactive Input Mode (October 12, 2025)
+
+### 🎉 Major Changes
+
+#### 1. **Interactive Input Mode**
+- **Removed command-line arguments** - No more complex `--brief` or `--provider=` flags
+- **Added step-by-step prompts** - Tool guides users through each decision
+- **Number-based menu system** - Simple 1, 2, 3 choices instead of typing arguments
+- **Better user experience** - Clear options at each step with validation
+
+**Before (v3.1):**
+```bash
+dart run enhanced_seo_tool.dart "keyword" --brief --provider=gemini
+```
+
+**Now (v3.2):**
+```bash
+dart run enhanced_seo_tool.dart
+# Follow the interactive prompts!
+```
+
+#### 2. **Interactive Flow**
+
+The tool now asks you three simple questions:
+
+**Step 1: Enter Target Keyword**
+```
+📝 Enter your target keyword:
+Keyword: [your keyword here]
+```
+
+**Step 2: Choose Workflow**
+```
+📋 Do you want to generate content brief?
+1. Yes - Full workflow (Keyword Research → Title Generation → Content Brief)
+2. No - Keyword Research Only
+
+Your choice (1-2): [1 or 2]
+```
+
+**Step 3: Select AI Provider** (only if choosing full workflow)
+```
+🤖 Select AI Provider:
+1. Anthropic Claude (Default)
+2. Google Gemini
+
+Your choice (1-2): [1 or 2]
+```
+
+#### 3. **New Helper Function**
+
+Added `getUserNumberInput()` function with validation:
+- Validates numeric input
+- Checks range (min-max)
+- Provides clear error messages
+- Loops until valid input received
+
+### ✨ Benefits
+
+✅ **Easier to Use** - No need to remember complex command-line syntax
+✅ **Fewer Typos** - No long argument strings to mistype
+✅ **Beginner Friendly** - Perfect for non-technical users
+✅ **Self-Documenting** - Options are shown at each step
+✅ **Better Validation** - Input is checked before processing
+
+### 📝 Documentation Updates
+
+- Updated `README.md` with new interactive flow examples
+- Created `MIGRATION_GUIDE.md` for v3.1 → v3.2 transition
+- Updated all usage examples throughout documentation
+- Added example session walkthrough
+
+### 🔄 Breaking Changes
+
+⚠️ **Command-line arguments no longer supported**
+
+If you have scripts using the old syntax, you'll need to either:
+1. Update them to use interactive mode
+2. Create a wrapper script that provides input programmatically
+
+See `MIGRATION_GUIDE.md` for details.
+
+### 📦 Files Modified
+
+- `enhanced_seo_tool.dart` - Replaced argument parsing with interactive prompts
+- `README.md` - Updated all usage examples and documentation
+- `MIGRATION_GUIDE.md` - NEW: Migration guide from v3.1 to v3.2
+
+---
+
 ## Version 3.1 - Dual AI Provider Support (October 9, 2025)
 
 ### 🎉 Major Features Added

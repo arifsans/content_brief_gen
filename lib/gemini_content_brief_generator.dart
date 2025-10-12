@@ -251,7 +251,7 @@ PENTING: Response HANYA JSON, tanpa teks lain. Bahasa Indonesia.
         ],
         generationConfig: GenerationConfig(
           maxOutputTokens: GeminiBriefConfig.unifiedMaxTokens,
-          temperature: 1,
+          temperature: 0.6,
           topP: 1,
         ),
       ),
@@ -464,7 +464,7 @@ PENTING: Response HANYA JSON, tanpa teks lain. Bahasa Indonesia.
         ],
         generationConfig: GenerationConfig(
           maxOutputTokens: GeminiBriefConfig.fallbackMaxTokens,
-          temperature: 1,
+          temperature: 0.6,
           topP: 1,
         ),
       ),

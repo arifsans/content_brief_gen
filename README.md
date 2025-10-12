@@ -2,12 +2,13 @@
 
 A comprehensive, professional-grade SEO tool that combines multi-source keyword research with AI-powered content brief generation using **Anthropic Claude** or **Google Gemini**. Features **dual AI provider support**, **AI title generation**, **brand-free keyword filtering**, **optimized unified generation**, and **Indonesian language support** for scalable content creation.
 
-## 🆕 What's New in v3.1
+## 🆕 What's New in v3.2
 
+🎮 **Interactive Input Mode** - No more complex command-line arguments!
 ✨ **Dual AI Provider Support** - Choose between Anthropic Claude or Google Gemini
 💰 **97.9% Cost Savings** - Use Gemini at $0.000225 per brief vs Claude at $0.0105
 ⚡ **Faster Generation** - Gemini delivers results in 1-2 seconds
-🔄 **Flexible Switching** - Change providers per request with `--provider` flag
+🎯 **Guided Workflow** - The tool prompts you step-by-step
 
 ## 📖 Table of Contents
 
@@ -25,11 +26,11 @@ A comprehensive, professional-grade SEO tool that combines multi-source keyword 
 ## ⚡ Quick Commands Reference
 
 ```bash
-# With Gemini (97.9% cheaper)
-./seo-tool "keyword" --brief --provider=gemini
+# Simple! Just run the tool and follow the interactive prompts:
+dart run enhanced_seo_tool.dart
 
-# With Claude (premium quality)
-./seo-tool "keyword" --brief --provider=anthropic
+# Or use the compiled executable (3-5x faster):
+./seo-tool
 
 # Get your API keys:
 # Gemini: https://aistudio.google.com/app/apikey
@@ -49,19 +50,20 @@ export ANTHROPIC_API_KEY="sk-ant-your_key_here"
 # OR for Google Gemini (97.9% cheaper!)
 export GEMINI_API_KEY="your_gemini_key_here"
 
-# 3. Compile to executable (recommended)
+# 3. Compile to executable (optional but recommended for speed)
 ./compile.sh
 
-# 4. Run the tool
-# Use Gemini (fast & cheap)
-./seo-tool "your keyword" --brief --provider=gemini
-
-# Use Claude (premium quality)
-./seo-tool "your keyword" --brief --provider=anthropic
+# 4. Run the tool - it will guide you through!
+./seo-tool
 
 # OR use Dart directly
-dart run enhanced_seo_tool.dart "your keyword" --brief --provider=gemini
+dart run enhanced_seo_tool.dart
 ```
+
+**🎯 Interactive Flow:**
+1. Enter your target keyword
+2. Choose: Full workflow or Keyword Research only
+3. Select AI Provider: Gemini (faster & cheaper) or Claude (premium)
 
 **🎯 Provider Recommendations:**
 - Use **Gemini** for: Cost-effectiveness, high-volume generation, testing
@@ -79,10 +81,11 @@ dart run enhanced_seo_tool.dart "your keyword" --brief --provider=gemini
 - **DuckDuckGo Autocomplete** - Privacy-focused search engine data with SSL error handling
 
 ### 🤖 **AI-Powered Content Brief Generation (Indonesian Language)**
-- **Dual AI Provider Support** - Choose between Anthropic Claude or Google Gemini
+- **Interactive Input Mode** - Guided step-by-step workflow without complex arguments
+- **Dual AI Provider Support** - Choose between Anthropic Claude or Google Gemini interactively
 - **Anthropic Claude Integration** - Premium AI using Claude Sonnet 4.5 for highest quality content
 - **Google Gemini Integration** - Cost-effective AI using Gemini 1.5 Flash (97.9% cheaper)
-- **Flexible Provider Selection** - Switch between providers with `--provider` flag
+- **Easy Provider Selection** - Simple number input to choose your AI provider
 - **AI Title Generation** - Generates 5-10 SEO-friendly article titles with automatic brand filtering
 - **Interactive Title Selection** - Choose from AI-generated titles or input your own custom title  
 - **Brand-Free Keywords** - AI automatically generates 10-15 related keywords without brand contamination
@@ -276,74 +279,88 @@ See [EXECUTABLE_GUIDE.md](EXECUTABLE_GUIDE.md) for detailed instructions.
 
 ## 🎯 Usage Guide
 
-### **Two Ways to Run the Tool**
+### **How to Run the Tool**
 
-#### **Option 1: Using Dart Command (Development)**
+The tool now uses **interactive input mode** instead of command-line arguments. Simply run:
+
 ```bash
-dart run enhanced_seo_tool.dart "your keyword" --brief
+# Using Dart (Development)
+dart run enhanced_seo_tool.dart
+
+# OR using compiled executable (Recommended - Faster)
+./seo-tool
 ```
 
-#### **Option 2: Using Compiled Executable (Recommended)**
-```bash
-# After compiling with ./compile.sh
-./seo-tool "your keyword" --brief
+The tool will guide you through:
+1. 📝 **Enter target keyword** - Type your keyword when prompted
+2. 📋 **Choose workflow** - Select between:
+   - Full workflow (Keyword Research → AI Title Generation → Content Brief)
+   - Keyword Research Only
+3. 🤖 **Select AI Provider** (if generating content brief):
+   - Anthropic Claude (Premium quality)
+   - Google Gemini (97.9% cheaper, faster)
 
-# Or if installed globally:
-seo-tool "your keyword" --brief
+### **Interactive Flow Example**
+
+```bash
+$ dart run enhanced_seo_tool.dart
+
+🚀 Enhanced SEO Research & Content Brief Generator
+=======================================================
+
+📝 Enter your target keyword:
+Keyword: cara membuat kopi
+
+📋 Do you want to generate content brief?
+1. Yes - Full workflow (Keyword Research → Title Generation → Content Brief)
+2. No - Keyword Research Only
+
+Your choice (1-2): 1
+
+🤖 Select AI Provider:
+1. Anthropic Claude (Default)
+2. Google Gemini
+
+Your choice (1-2): 2
+
+🚀 Enhanced SEO Research & Content Brief Generator
+=======================================================
+Target Keyword: "cara membuat kopi"
+AI Provider: Google Gemini
+Mode: Keyword Research → AI Title Generation → User Selection → Content Brief (Optimized)
+
+📊 PHASE 1: KEYWORD RESEARCH
+-----------------------------------
+...
 ```
 
-**Why use the executable?**
-- ⚡ **3-5x faster** - No Dart VM startup overhead
-- 🎯 **Simpler syntax** - No need to type `dart run`
-- 📦 **Portable** - Share with team members without Dart SDK
-- 🌍 **Global access** - Run from any directory
+### **Why Interactive Input?**
+- ✅ **No need to remember commands** - The tool guides you step by step
+- ✅ **Easier to use** - Just run the tool and follow prompts
+- ✅ **Fewer typos** - No complex command-line arguments
+- ✅ **Better UX** - Clear options at each step
+
+### **Old Command-Line vs New Interactive**
+
+**Before (Complex):**
+```bash
+dart run enhanced_seo_tool.dart "your keyword here" --brief --provider=gemini
+```
+
+**Now (Simple):**
+```bash
+dart run enhanced_seo_tool.dart
+# Then follow the prompts!
+```
 
 ### **New Enhanced Workflow**
 
-When using the `--brief` flag, the tool now follows an enhanced 4-step workflow:
+When choosing the full workflow option (option 1), the tool follows an enhanced 4-step workflow:
 
 1. **Keyword Research** - Gathers keywords from 5 different sources
 2. **AI Title Generation** - Generates 5 SEO-friendly article titles (brand-free)
 3. **User Selection** - Choose from generated titles or input custom title
 4. **Content Brief Generation** - Creates comprehensive SEO brief with AI-generated brand-free keywords
-
-### **Basic Commands**
-
-#### **Keyword Research Only**
-```bash
-# Using Dart
-dart run enhanced_seo_tool.dart "your keyword here"
-
-# Using executable (faster)
-./seo-tool "your keyword here"
-```
-
-#### **Complete Content Brief with Gemini (Recommended - Cost-Effective)**
-```bash
-# Using Dart
-dart run enhanced_seo_tool.dart "your keyword here" --brief --provider=gemini
-
-# Using executable (faster)
-./seo-tool "your keyword here" --brief --provider=gemini
-```
-
-#### **Complete Content Brief with Claude (Premium Quality)**
-```bash
-# Using Dart
-dart run enhanced_seo_tool.dart "your keyword here" --brief --provider=anthropic
-
-# Using executable (faster)
-./seo-tool "your keyword here" --brief --provider=anthropic
-```
-
-#### **Default Provider (uses Anthropic if available)**
-```bash
-# Using Dart
-dart run enhanced_seo_tool.dart "your keyword here" --brief
-
-# Using executable (faster)
-./seo-tool "your keyword here" --brief
-```
 
 This will:
 - ✅ Research keywords from 5 sources
@@ -354,25 +371,21 @@ This will:
 ### **Practical Examples**
 
 ```bash
-# Indonesian keyword research (using Dart)
-dart run enhanced_seo_tool.dart "cara membuat kopi"
+# Simply run the tool - it will prompt you for everything!
+dart run enhanced_seo_tool.dart
 
-# Indonesian keyword research (using executable - faster)
-./seo-tool "cara membuat kopi"
+# Or use the compiled executable (faster)
+./seo-tool
 
-# Complete workflow with Gemini (cheap & fast)
-dart run enhanced_seo_tool.dart "tips diet sehat" --brief --provider=gemini
-./seo-tool "tips diet sehat" --brief --provider=gemini
-
-# Complete workflow with Claude (premium quality)
-dart run enhanced_seo_tool.dart "tips diet sehat" --brief --provider=anthropic
-./seo-tool "tips diet sehat" --brief --provider=anthropic
-
-# Complex multi-word Indonesian keywords with Gemini
-./seo-tool "strategi pemasaran digital untuk umkm" --brief --provider=gemini
+# The tool will ask you to:
+# 1. Enter keyword (e.g., "cara membuat kopi", "tips diet sehat")
+# 2. Choose workflow (Full or Keyword Research only)
+# 3. Select AI provider (Gemini or Claude)
 
 # If installed globally, run from anywhere:
 cd ~/Documents
+./seo-tool
+```
 seo-tool "bisnis online pemula" --brief --provider=gemini
 ```
 
@@ -398,11 +411,29 @@ seo-tool "bisnis online pemula" --brief --provider=gemini
 ### **Interactive Title Selection Example**
 
 ```bash
-# Using executable (recommended)
-$ ./seo-tool "cara merawat kulit wajah" --brief
+# Simply run the tool
+$ ./seo-tool
 
 # Or using Dart command
-$ dart run enhanced_seo_tool.dart "cara merawat kulit wajah" --brief
+$ dart run enhanced_seo_tool.dart
+
+🚀 Enhanced SEO Research & Content Brief Generator
+=======================================================
+
+📝 Enter your target keyword:
+Keyword: cara merawat kulit wajah
+
+📋 Do you want to generate content brief?
+1. Yes - Full workflow (Keyword Research → Title Generation → Content Brief)
+2. No - Keyword Research Only
+
+Your choice (1-2): 1
+
+🤖 Select AI Provider:
+1. Anthropic Claude (Default)
+2. Google Gemini
+
+Your choice (1-2): 2
 
 📝 PHASE 1.5: GENERATING SEO-FRIENDLY ARTICLE TITLES
 -------------------------------------------------------
