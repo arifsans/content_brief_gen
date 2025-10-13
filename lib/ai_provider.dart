@@ -36,6 +36,24 @@ abstract class AIArticleTitleGenerator {
   void dispose();
 }
 
+/// Base class for AI-powered full article generation
+abstract class AIArticleGenerator {
+  /// Generate a complete SEO-optimized article from content brief
+  Future<String> generateArticle(ContentBrief brief);
+  
+  /// Save article to file
+  Future<void> saveArticle(String article, String keyword, {String? timestampedFolder});
+  
+  /// Get performance metrics
+  Map<String, dynamic> getMetrics();
+  
+  /// Print metrics summary
+  void printMetrics();
+  
+  /// Cleanup resources
+  void dispose();
+}
+
 /// Content Brief data model (shared across all providers)
 class ContentBrief {
   final String keyword;

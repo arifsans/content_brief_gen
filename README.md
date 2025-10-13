@@ -1,8 +1,22 @@
 # 🚀 Enhanced SEO Tool - Advanced Keyword Research & AI Content Brief Generator
 
-A comprehensive, professional-grade SEO tool that combines multi-source keyword research with AI-powered content brief generation using **Anthropic Claude** or **Google Gemini**. Features **dual AI provider support**, **AI title generation**, **brand-free keyword filtering**, **optimized unified generation**, and **Indonesian language support** for scalable content creation.
+A comprehensive, professional-grade SEO tool that combines multi-source keyword research with AI-powered content brief generation and **full article generation** using **Anthropic Claude** or **Google Gemini**. Features **dual AI provider support**, **AI title generation**, **full SEO article generation**, **Word document export**, **brand-free keyword filtering**, **optimized unified generation**, and **Indonesian language support** for scalable content creation.
 
-## 🆕 What's New in v3.2
+## 🆕 What's New in v3.4
+
+🔧 **Word Document Fix** - Fixed "List 1" error in generated Word documents
+📏 **Article Length Control** - Strict 1000-2000 word limit (was 4000+)
+💰 **50% Cost Reduction** - Reduced from 4000+ words to 2000 words max
+📚 **SEO-Friendly Sources** - Natural source references instead of bibliography format
+✨ **Better Quality** - More focused, concise, and cost-effective articles
+
+## Previous Updates (v3.3)
+
+🎯 **Full Article Generation** - Generate complete 1000-2000 word SEO-optimized articles!
+📝 **Structured Content** - Articles follow your content brief exactly
+🌐 **Page One Optimization** - Content designed to rank on Google page one
+✨ **Dual AI Support** - Available with both Claude and Gemini
+💡 **Optional Feature** - Choose whether to generate article or just brief
 
 🎮 **Interactive Input Mode** - No more complex command-line arguments!
 ✨ **Dual AI Provider Support** - Choose between Anthropic Claude or Google Gemini
@@ -95,6 +109,20 @@ dart run enhanced_seo_tool.dart
 - **Meta Descriptions** - Compelling, click-through optimized descriptions (150-160 chars)
 - **Article Structure** - Detailed H2/H3 outline with 6-8 main sections
 - **Topic Analysis** - Comprehensive topic recommendations with user intent focus
+
+### 📝 **NEW: Full Article Generation**
+- **Complete Articles** - Generate 1000-2000 word SEO-optimized articles
+- **Strict Word Limits** - 1000 word minimum, 2000 word maximum (controlled length)
+- **Brief-Based** - Articles follow your content brief structure exactly
+- **SEO Optimized** - Keyword density, E-E-A-T principles, readability optimization
+- **Natural Language** - Conversational Bahasa Indonesia content
+- **SEO-Friendly Sources** - Natural source references (not bibliography format)
+- **Multiple Formats** - Markdown (.md) and Word Document (.docx) exports
+- **Optional Feature** - Choose whether to generate article after brief creation
+- **Page One Targeting** - Content designed to rank on Google page one
+- **Both AI Providers** - Available with Claude (premium) or Gemini (cost-effective)
+- **Metadata Tracking** - Word count, character count, generation details
+- **Cost Effective** - 50% cost reduction due to shorter, focused articles
 
 ### 💰 **Cost Optimization Features**
 - **Unified Generation** - Generate all components in 1 API call instead of 4 (54% cost savings)

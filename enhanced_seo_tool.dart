@@ -7,6 +7,8 @@ import 'lib/gemini_content_brief_generator.dart';
 import 'lib/word_document_generator.dart';
 import 'lib/article_title_generator.dart';
 import 'lib/gemini_article_title_generator.dart';
+import 'lib/article_generator.dart';
+import 'lib/gemini_article_generator.dart';
 
 Future<void> main(List<String> args) async {
   print('🚀 Enhanced SEO Research & Content Brief Generator');
@@ -138,10 +140,13 @@ Future<void> main(List<String> args) async {
     final targetKeyword = selectedTitle;
     final timestampedFolder = keywordResults['timestampedFolder'] as String;
 
+    // Variable to hold the brief for later use in article generation
+    ContentBrief? brief;
+
     try {
       // Generate content brief (unified generation - 1 API call)
       // Not passing relatedKeywords to avoid brand contamination
-      final brief = await briefGenerator.generateContentBrief(
+      brief = await briefGenerator.generateContentBrief(
         targetKeyword,
         [], // Empty list - AI will generate relevant keywords without brand bias
       );
@@ -165,6 +170,55 @@ Future<void> main(List<String> args) async {
       print('❌ Error in content brief generation: $e');
       print('💡 All retry attempts exhausted. Please check your API key and network connection.');
       exit(1);
+    }
+
+    // Step 3: Ask if user wants to generate full article
+    print('\n📝 PHASE 3: FULL ARTICLE GENERATION');
+    print('-' * 45);
+    print('Do you want to generate a full SEO-optimized article based on the content brief?');
+    print('1. Yes - Generate complete article (1000-2000 words)');
+    print('2. No - Skip article generation');
+    stdout.write('\nYour choice (1-2): ');
+    
+    final articleChoice = getUserNumberInput(1, 2);
+    final generateArticle = articleChoice == 1;
+
+    if (generateArticle) {
+      print('\n🚀 Starting article generation...\n');
+      
+      try {
+        // Create article generator based on provider
+        late AIArticleGenerator articleGenerator;
+        if (provider == AIProvider.anthropic) {
+          articleGenerator = ArticleGenerator(apiKey: apiKey);
+        } else {
+          articleGenerator = GeminiArticleGenerator(apiKey: apiKey);
+        }
+
+        // Generate article
+        final article = await articleGenerator.generateArticle(brief);
+
+        // Save article
+        await articleGenerator.saveArticle(
+          article,
+          brief.keyword,
+          timestampedFolder: timestampedFolder,
+        );
+
+        print('\n✅ Article generation completed!\n');
+        
+        // Print article metrics
+        articleGenerator.printMetrics();
+        
+        // Cleanup
+        articleGenerator.dispose();
+
+      } catch (e) {
+        print('❌ Error in article generation: $e');
+        print('💡 The content brief was saved successfully. You can try generating the article again later.');
+      }
+    } else {
+      print('\n⏭️ Skipping article generation.');
     }
     
     // Print combined performance metrics
@@ -197,13 +251,21 @@ Future<void> main(List<String> args) async {
     print('  • keyword_research_report.txt - Comprehensive keyword analysis');
     print('  • ${targetKeyword.replaceAll(' ', '_').toLowerCase()}_content_brief.txt - Human-readable content brief');
     print('  • ${targetKeyword.replaceAll(' ', '_').toLowerCase()}_content_brief.json - Machine-readable data');
-    print('  • ${targetKeyword.replaceAll(' ', '_').toLowerCase()}_brief.docx - Microsoft Word document');
+    print('  • ${targetKeyword.replaceAll(' ', '_').toLowerCase()}_brief.docx - Microsoft Word document (Content Brief)');
+    if (generateArticle) {
+      print('  • ${targetKeyword.replaceAll(' ', '_').toLowerCase()}_article.md - Full article (Markdown)');
+      print('  • ${targetKeyword.replaceAll(' ', '_').toLowerCase()}_article.docx - Full article (Word)');
+      print('  • ${targetKeyword.replaceAll(' ', '_').toLowerCase()}_article_metadata.json - Article metadata');
+    }
     print('');
     print('💡 Process flow completed:');
     print('  ✅ Step 1: Keyword research from multiple sources');
     print('  ✅ Step 2: AI-generated SEO-friendly article titles (${provider == AIProvider.anthropic ? 'Claude' : 'Gemini'})');
     print('  ✅ Step 3: User selected article title');
     print('  ✅ Step 4: Generated comprehensive content brief (${provider == AIProvider.anthropic ? 'Claude' : 'Gemini'})');
+    if (generateArticle) {
+      print('  ✅ Step 5: Generated full SEO-optimized article (${provider == AIProvider.anthropic ? 'Claude' : 'Gemini'})');
+    }
     print('');
     print('⚡ AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude Sonnet 4' : 'Google Gemini 2.5 Flash Lite'}');
 

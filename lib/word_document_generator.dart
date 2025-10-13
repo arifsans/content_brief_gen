@@ -36,6 +36,41 @@ class WordDocumentGenerator {
     print('📄 Word document saved to: $filename');
   }
 
+  /// Generate a Word document for an article
+  Future<void> generateArticleWordDocument(
+    String article, 
+    String keyword, 
+    {String? timestampedFolder}
+  ) async {
+    final dir = timestampedFolder != null 
+        ? 'results/$timestampedFolder' 
+        : ('article');
+    final resultsDir = Directory(dir);
+    
+    if (!await resultsDir.exists()) {
+      await resultsDir.create(recursive: true);
+    }
+
+    final safeKeyword = keyword.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+    final filename = '$dir/${safeKeyword.replaceAll(' ', '_')}_article.docx';
+    
+    // Create the Word document content
+    final wordContent = _createArticleWordDocument(article, keyword);
+    
+    // Create the DOCX file
+    final archive = Archive();
+    
+    // Add required files for DOCX format
+    _addDocxFiles(archive, wordContent);
+    
+    // Encode and save
+    final encoder = ZipEncoder();
+    final data = encoder.encode(archive);
+    
+    await File(filename).writeAsBytes(data!);
+    print('💾 Word document saved: $filename');
+  }
+
   /// Create the main document content XML
   String _createWordDocument(ContentBrief brief) {
     final content = StringBuffer();
@@ -104,6 +139,126 @@ class WordDocumentGenerator {
     return content.toString();
   }
 
+  /// Create article document content XML (with Markdown-style formatting)
+  String _createArticleWordDocument(String article, String keyword) {
+    final content = StringBuffer();
+    
+    // Document header
+    content.write('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+''');
+
+    // Parse the article and convert to Word format
+    final lines = article.split('\n');
+    
+    for (var line in lines) {
+      line = line.trim();
+      
+      if (line.isEmpty) {
+        // Empty line - add paragraph break
+        content.write(_createParagraph(''));
+        continue;
+      }
+      
+      // Check for Markdown headers
+      if (line.startsWith('# ')) {
+        // H1 heading
+        content.write(_createHeading(line.substring(2).trim(), 1));
+      } else if (line.startsWith('## ')) {
+        // H2 heading
+        content.write(_createHeading(line.substring(3).trim(), 2));
+      } else if (line.startsWith('### ')) {
+        // H3 heading (treat as H2 in Word for simplicity)
+        content.write(_createHeading(line.substring(4).trim(), 2));
+      } else if (line.startsWith('**') && line.endsWith('**')) {
+        // Bold paragraph
+        final text = line.substring(2, line.length - 2);
+        content.write(_createParagraph(text, bold: true));
+      } else if (line.startsWith('*') && line.endsWith('*') && !line.startsWith('**')) {
+        // Italic paragraph
+        final text = line.substring(1, line.length - 1);
+        content.write(_createParagraph(text, italic: true));
+      } else if (line.startsWith('- ') || line.startsWith('* ')) {
+        // Bullet point
+        content.write(_createBulletPoint(line.substring(2).trim()));
+      } else if (RegExp(r'^\d+\.\s').hasMatch(line)) {
+        // Numbered list
+        final text = line.replaceFirst(RegExp(r'^\d+\.\s'), '');
+        content.write(_createNumberedPoint(text));
+      } else {
+        // Regular paragraph - handle inline formatting
+        content.write(_createFormattedParagraph(line));
+      }
+    }
+
+    // Document footer
+    content.write('''
+  </w:body>
+</w:document>''');
+
+    return content.toString();
+  }
+
+  /// Create a formatted paragraph with inline bold/italic
+  String _createFormattedParagraph(String text) {
+    // Simple inline formatting (this is a basic implementation)
+    // For better formatting, consider using a markdown parser
+    final buffer = StringBuffer();
+    buffer.write('<w:p>');
+    
+    // Split by bold markers **text**
+    final parts = text.split('**');
+    for (var i = 0; i < parts.length; i++) {
+      if (i % 2 == 0) {
+        // Regular text
+        if (parts[i].isNotEmpty) {
+          buffer.write('<w:r><w:t xml:space="preserve">${_escapeXml(parts[i])}</w:t></w:r>');
+        }
+      } else {
+        // Bold text
+        buffer.write('<w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${_escapeXml(parts[i])}</w:t></w:r>');
+      }
+    }
+    
+    buffer.write('</w:p>\n');
+    return buffer.toString();
+  }
+
+  /// Create a bullet point in Word format
+  String _createBulletPoint(String text) {
+    return '''
+    <w:p>
+      <w:pPr>
+        <w:numPr>
+          <w:ilvl w:val="0"/>
+          <w:numId w:val="1"/>
+        </w:numPr>
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">${_escapeXml(text)}</w:t>
+      </w:r>
+    </w:p>
+''';
+  }
+
+  /// Create a numbered point in Word format
+  String _createNumberedPoint(String text) {
+    return '''
+    <w:p>
+      <w:pPr>
+        <w:numPr>
+          <w:ilvl w:val="0"/>
+          <w:numId w:val="2"/>
+        </w:numPr>
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">${_escapeXml(text)}</w:t>
+      </w:r>
+    </w:p>
+''';
+  }
+
   /// Create a heading in Word format
   String _createHeading(String text, int level) {
     return '''
@@ -112,7 +267,7 @@ class WordDocumentGenerator {
         <w:pStyle w:val="Heading$level"/>
       </w:pPr>
       <w:r>
-        <w:t>$text</w:t>
+        <w:t xml:space="preserve">${_escapeXml(text)}</w:t>
       </w:r>
     </w:p>
 ''';
@@ -120,22 +275,20 @@ class WordDocumentGenerator {
 
   /// Create a paragraph in Word format
   String _createParagraph(String text, {bool bold = false, bool italic = false}) {
-    final runProps = StringBuffer();
+    final buffer = StringBuffer();
+    buffer.write('    <w:p>\n      <w:r>');
+    
     if (bold || italic) {
-      runProps.write('<w:rPr>');
-      if (bold) runProps.write('<w:b/>');
-      if (italic) runProps.write('<w:i/>');
-      runProps.write('</w:rPr>');
+      buffer.write('\n        <w:rPr>');
+      if (bold) buffer.write('\n          <w:b/>');
+      if (italic) buffer.write('\n          <w:i/>');
+      buffer.write('\n        </w:rPr>');
     }
-
-    return '''
-    <w:p>
-      <w:r>
-        $runProps
-        <w:t>${_escapeXml(text)}</w:t>
-      </w:r>
-    </w:p>
-''';
+    
+    buffer.write('\n        <w:t xml:space="preserve">${_escapeXml(text)}</w:t>');
+    buffer.write('\n      </w:r>\n    </w:p>\n');
+    
+    return buffer.toString();
   }
 
   /// Add required files for DOCX format
@@ -174,6 +327,13 @@ class WordDocumentGenerator {
       0,
       Uint8List.fromList(_stylesXml.codeUnits),
     ));
+
+    // Add word/numbering.xml (required for bullet and numbered lists)
+    archive.addFile(ArchiveFile(
+      'word/numbering.xml',
+      0,
+      Uint8List.fromList(_numberingXml.codeUnits),
+    ));
   }
 
   /// Escape XML special characters
@@ -208,6 +368,7 @@ class WordDocumentGenerator {
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+  <Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>
 </Types>''';
 
   static const String _relsXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -218,6 +379,7 @@ class WordDocumentGenerator {
   static const String _documentRelsXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
 </Relationships>''';
 
   static const String _stylesXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -243,4 +405,38 @@ class WordDocumentGenerator {
     </w:rPr>
   </w:style>
 </w:styles>''';
+
+  static const String _numberingXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="0">
+    <w:multiLevelType w:val="hybridMultilevel"/>
+    <w:lvl w:ilvl="0">
+      <w:start w:val="1"/>
+      <w:numFmt w:val="bullet"/>
+      <w:lvlText w:val="•"/>
+      <w:lvlJc w:val="left"/>
+      <w:pPr>
+        <w:ind w:left="720" w:hanging="360"/>
+      </w:pPr>
+    </w:lvl>
+  </w:abstractNum>
+  <w:abstractNum w:abstractNumId="1">
+    <w:multiLevelType w:val="hybridMultilevel"/>
+    <w:lvl w:ilvl="0">
+      <w:start w:val="1"/>
+      <w:numFmt w:val="decimal"/>
+      <w:lvlText w:val="%1."/>
+      <w:lvlJc w:val="left"/>
+      <w:pPr>
+        <w:ind w:left="720" w:hanging="360"/>
+      </w:pPr>
+    </w:lvl>
+  </w:abstractNum>
+  <w:num w:numId="1">
+    <w:abstractNumId w:val="0"/>
+  </w:num>
+  <w:num w:numId="2">
+    <w:abstractNumId w:val="1"/>
+  </w:num>
+</w:numbering>''';
 }

@@ -19,7 +19,7 @@ class GeminiBriefConfig {
   static const Duration minRequestDelay = Duration(milliseconds: 500);
   
   // Model selection
-  static const String model = 'gemini-2.5-flash-lite'; // Fast and efficient
+  static const String model = 'gemini-2.5-flash'; // Fast and efficient
 }
 
 /// Metrics collector for Gemini API calls
@@ -250,7 +250,7 @@ PENTING: Response HANYA JSON, tanpa teks lain. Bahasa Indonesia.
           ),
         ],
         generationConfig: GenerationConfig(
-          maxOutputTokens: GeminiBriefConfig.unifiedMaxTokens,
+          maxOutputTokens: null,
           temperature: 0.6,
           topP: 1,
         ),
@@ -463,7 +463,7 @@ PENTING: Response HANYA JSON, tanpa teks lain. Bahasa Indonesia.
           ),
         ],
         generationConfig: GenerationConfig(
-          maxOutputTokens: GeminiBriefConfig.fallbackMaxTokens,
+          maxOutputTokens: null,
           temperature: 0.6,
           topP: 1,
         ),

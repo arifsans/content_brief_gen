@@ -42,7 +42,7 @@ Pastikan judul tidak menyebutkan merek/brand tertentu.
 ''';
 
       final response = await _gemini.generateContent(
-        modelId: 'gemini-2.5-flash-lite',
+        modelId: 'gemini-2.5-flash',
         request: GenerateContentRequest(
           contents: [
             Content(
@@ -50,7 +50,7 @@ Pastikan judul tidak menyebutkan merek/brand tertentu.
             ),
           ],
           generationConfig: const GenerationConfig(
-            maxOutputTokens: 600,
+            maxOutputTokens: null,
             temperature: 0.6,
           ),
         ),
