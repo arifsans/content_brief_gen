@@ -8,6 +8,8 @@ A comprehensive, professional-grade SEO tool that combines multi-source keyword 
 📏 **Article Length Control** - Strict 1000-2000 word limit (was 4000+)
 💰 **50% Cost Reduction** - Reduced from 4000+ words to 2000 words max
 📚 **SEO-Friendly Sources** - Natural source references instead of bibliography format
+🌐 **WordPress HTML Export** - Copy-paste ready HTML for WordPress Block Editor
+✨ **Block Editor Compatible** - Uses `<b>` and `<i>` tags for perfect rendering
 ✨ **Better Quality** - More focused, concise, and cost-effective articles
 
 ## Previous Updates (v3.3)
@@ -633,13 +635,50 @@ content_brief_gen/
 │       ├── keyword_research_report.txt    # Comprehensive keyword analysis
 │       ├── [title]_content_brief.txt      # Human-readable format
 │       ├── [title]_content_brief.json     # Machine-readable data
-│       └── [title]_brief.docx             # Microsoft Word document
+│       ├── [title]_brief.docx             # Microsoft Word document
+│       ├── [title]_article.md             # Full article (Markdown)
+│       ├── [title]_article_wordpress.html # WordPress-ready HTML (copy-paste)
+│       └── [title]_article_metadata.json  # Article generation metadata
 ├── lib/
 │   ├── keyword_generator.dart             # Keyword research engine
 │   ├── article_title_generator.dart       # AI title generation
 │   ├── optimized_content_brief_generator.dart  # Unified brief generation
+│   ├── article_generator.dart             # Claude article generation
+│   ├── gemini_article_generator.dart      # Gemini article generation
 │   └── word_document_generator.dart       # Document export
 └── enhanced_seo_tool.dart                 # Main entry point
+```
+
+### **WordPress HTML Export**
+
+When you generate a full article, you'll get a `*_wordpress.html` file that's ready to copy-paste directly into WordPress Block Editor:
+
+**Features:**
+- ✅ Clean HTML structure (no escaping issues)
+- ✅ Block Editor compatible (`<b>`, `<i>` tags work perfectly)
+- ✅ Proper heading hierarchy (`<h1>`, `<h2>`, `<h3>`)
+- ✅ Lists formatted correctly (`<ul>`, `<ol>`, `<li>`)
+- ✅ Paragraphs wrapped in `<p>` tags
+- ✅ Bold text using `<b>` (not `<strong>`)
+- ✅ Italic text using `<i>` (not `<em>`)
+
+**How to Use:**
+1. Generate article with the tool
+2. Open `[title]_article_wordpress.html` file
+3. Copy all content (Ctrl+A, Ctrl+C)
+4. Paste into WordPress Block Editor
+5. All formatting will be preserved perfectly!
+
+**Example HTML Output:**
+```html
+<h1>Your SEO-Optimized Title</h1>
+<p>Introduction paragraph with <b>bold text</b> and <i>italic text</i>.</p>
+<h2>Main Section Heading</h2>
+<p>Content paragraph...</p>
+<ul>
+<li>Bullet point one</li>
+<li>Bullet point two</li>
+</ul>
 ```
 
 ## 📄 Content Brief Structure

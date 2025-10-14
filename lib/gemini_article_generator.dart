@@ -99,7 +99,7 @@ class GeminiArticleGenerator implements AIArticleGenerator {
   }
 
   String _buildArticlePrompt(ContentBrief brief) {
-    return '''You are an expert SEO content writer specializing in creating high-quality, engaging articles that rank on page one of Google search results.
+    return '''You are an expert SEO content writer specializing in creating high-quality, engaging articles that rank on page one of Google search results and recommended by Google Search Generative Experience.
 
 Your task is to write a COMPLETE, COMPREHENSIVE, and SEO-OPTIMIZED article based on the following content brief:
 
@@ -286,6 +286,17 @@ Please write the complete article now. Make it engaging, informative, optimized 
     await mdFile.writeAsString(article);
     print('💾 Markdown saved: ${mdFile.path}');
 
+    // Save as WordPress-ready HTML
+    try {
+      final htmlContent = _convertToWordPressHTML(article);
+      final htmlFile = File('${resultsDir.path}/${safeFilename}_article_wordpress.html');
+      await htmlFile.writeAsString(htmlContent);
+      print('💾 WordPress HTML saved: ${htmlFile.path}');
+      print('   ✨ Ready to copy-paste into WordPress editor!');
+    } catch (e) {
+      print('   ⚠️ Failed to generate WordPress HTML: $e');
+    }
+
     //Save as Word Document
     final docGenerator = WordDocumentGenerator();
     try {
@@ -309,6 +320,125 @@ Please write the complete article now. Make it engaging, informative, optimized 
       JsonEncoder.withIndent('  ').convert(metadata)
     );
     print('💾 Metadata saved: ${metadataFile.path}');
+  }
+
+  /// Convert Markdown article to WordPress-ready HTML
+  String _convertToWordPressHTML(String markdown) {
+    final buffer = StringBuffer();
+    final lines = markdown.split('\n');
+    
+    bool inList = false;
+    bool inOrderedList = false;
+    
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      
+      if (line.isEmpty) {
+        // Close any open lists
+        if (inList) {
+          buffer.writeln('</ul>');
+          inList = false;
+        }
+        if (inOrderedList) {
+          buffer.writeln('</ol>');
+          inOrderedList = false;
+        }
+        buffer.writeln();
+        continue;
+      }
+      
+      // H1 heading
+      if (line.startsWith('# ')) {
+        if (inList) buffer.writeln('</ul>');
+        if (inOrderedList) buffer.writeln('</ol>');
+        inList = false;
+        inOrderedList = false;
+        
+        final text = line.substring(2).trim();
+        buffer.writeln('<h1>${_processInlineFormatting(text)}</h1>');
+      }
+      // H2 heading
+      else if (line.startsWith('## ')) {
+        if (inList) buffer.writeln('</ul>');
+        if (inOrderedList) buffer.writeln('</ol>');
+        inList = false;
+        inOrderedList = false;
+        
+        final text = line.substring(3).trim();
+        buffer.writeln('<h2>${_processInlineFormatting(text)}</h2>');
+      }
+      // H3 heading
+      else if (line.startsWith('### ')) {
+        if (inList) buffer.writeln('</ul>');
+        if (inOrderedList) buffer.writeln('</ol>');
+        inList = false;
+        inOrderedList = false;
+        
+        final text = line.substring(4).trim();
+        buffer.writeln('<h3>${_processInlineFormatting(text)}</h3>');
+      }
+      // Unordered list
+      else if (line.startsWith('- ') || line.startsWith('* ')) {
+        if (inOrderedList) {
+          buffer.writeln('</ol>');
+          inOrderedList = false;
+        }
+        if (!inList) {
+          buffer.writeln('<ul>');
+          inList = true;
+        }
+        final text = line.substring(2).trim();
+        buffer.writeln('<li>${_processInlineFormatting(text)}</li>');
+      }
+      // Ordered list
+      else if (RegExp(r'^\d+\.\s').hasMatch(line)) {
+        if (inList) {
+          buffer.writeln('</ul>');
+          inList = false;
+        }
+        if (!inOrderedList) {
+          buffer.writeln('<ol>');
+          inOrderedList = true;
+        }
+        final text = line.replaceFirst(RegExp(r'^\d+\.\s'), '').trim();
+        buffer.writeln('<li>${_processInlineFormatting(text)}</li>');
+      }
+      // Regular paragraph
+      else {
+        if (inList) {
+          buffer.writeln('</ul>');
+          inList = false;
+        }
+        if (inOrderedList) {
+          buffer.writeln('</ol>');
+          inOrderedList = false;
+        }
+        buffer.writeln('<p>${_processInlineFormatting(line)}</p>');
+      }
+    }
+    
+    // Close any remaining open lists
+    if (inList) buffer.writeln('</ul>');
+    if (inOrderedList) buffer.writeln('</ol>');
+    
+    return buffer.toString();
+  }
+
+  /// Process inline formatting (bold, italic) in text
+  String _processInlineFormatting(String text) {
+    // Process bold (**text**) - using <b> for WordPress Block Editor compatibility
+    text = text.replaceAllMapped(
+      RegExp(r'\*\*(.+?)\*\*'),
+      (match) => '<b>${match.group(1)}</b>'
+    );
+    
+    // Process italic (*text* but not **) - using <i> for WordPress Block Editor compatibility
+    text = text.replaceAllMapped(
+      RegExp(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)'),
+      (match) => '<i>${match.group(1)}</i>'
+    );
+    
+    return text;
   }
 
   @override
