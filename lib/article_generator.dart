@@ -46,10 +46,10 @@ class ArticleMetricsCollector {
       totalCacheReadTokens += cacheReadTokens;
     }
     
-    // Calculate cost (Claude Sonnet 4 pricing)
-    final inputCost = inputTokens * 0.003 / 1000;
-    final outputCost = outputTokens * 0.015 / 1000;
-    final cacheCost = (cacheReadTokens ?? 0) * 0.0003 / 1000;
+    // Calculate cost (Claude Haiku 4.5 pricing)
+    final inputCost = inputTokens * 0.0008 / 1000;
+    final outputCost = outputTokens * 0.004 / 1000;
+    final cacheCost = (cacheReadTokens ?? 0) * 0.00008 / 1000;
     totalCostUSD += inputCost + outputCost + cacheCost;
   }
   
@@ -77,7 +77,7 @@ class ArticleGenerator implements AIArticleGenerator {
   @override
   Future<String> generateArticle(ContentBrief brief) async {
     print('📝 Generating full SEO-optimized article for: "${brief.keyword}"');
-    print('   Using AI: Anthropic Claude Sonnet 4');
+    print('   Using AI: Anthropic Claude Haiku 4.5');
     print('   Structure: ${brief.articleStructure.length} sections\n');
 
     final startTime = DateTime.now();
@@ -193,7 +193,7 @@ Please write the complete article now. Make it engaging, informative, optimized 
         final response = await _client
             .createMessage(
               request: CreateMessageRequest(
-                model: Model.modelId('claude-sonnet-4-5-20250929'),
+                model: Model.modelId('claude-haiku-4-5-20251001'),
                 maxTokens: ArticleConfig.maxTokens,
                 messages: [
                   Message(
@@ -304,7 +304,7 @@ Please write the complete article now. Make it engaging, informative, optimized 
       'keyword': keyword,
       'generated_at': DateTime.now().toIso8601String(),
       'ai_provider': 'anthropic_claude',
-      'model': 'claude-sonnet-4-5-20250929',
+      'model': 'claude-haiku-4-5-20251001',
       'word_count': article.split(' ').length,
       'character_count': article.length,
     };

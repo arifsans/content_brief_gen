@@ -60,14 +60,14 @@ class MetricsCollector {
       totalCacheReadTokens += cacheReadTokens;
     }
     
-    // Calculate cost (Claude Sonnet 4.5 pricing - March 2025)
-    // Input: $3.00 per 1M tokens
-    // Output: $15.00 per 1M tokens
-    // Cache write: $3.75 per 1M tokens (25% more than input)
-    // Cache read: $0.30 per 1M tokens (90% cheaper than input)
-    final inputCost = (inputTokens / 1000000) * 3.00;
-    final outputCost = (outputTokens / 1000000) * 15.00;
-    final cacheSavings = cacheReadTokens != null ? (cacheReadTokens / 1000000) * 2.70 : 0; // 3.00 - 0.30 = 2.70 savings
+    // Calculate cost (Claude Haiku 4.5 pricing)
+    // Input: $0.80 per 1M tokens
+    // Output: $4.00 per 1M tokens
+    // Cache write: $1.00 per 1M tokens (25% more than input)
+    // Cache read: $0.08 per 1M tokens (90% cheaper than input)
+    final inputCost = (inputTokens / 1000000) * 0.80;
+    final outputCost = (outputTokens / 1000000) * 4.00;
+    final cacheSavings = cacheReadTokens != null ? (cacheReadTokens / 1000000) * 0.72 : 0; // 0.80 - 0.08 = 0.72 savings
     
     totalCostUSD += (inputCost + outputCost - cacheSavings);
     
@@ -244,7 +244,7 @@ PENTING: Response HANYA JSON, tanpa teks lain. Bahasa Indonesia.
 
     return await _anthropic.createMessage(
       request: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
+        model: Model.modelId('claude-haiku-4-5-20251001'),
         maxTokens: BriefConfig.unifiedMaxTokens,
         system: CreateMessageRequestSystem.blocks([
           Block.text(
@@ -565,7 +565,7 @@ FORMAT: JSON valid. BAHASA: Indonesia.
     
     final response = await _anthropic.createMessage(
       request: CreateMessageRequest(
-        model: Model.modelId('claude-sonnet-4-5-20250929'),
+        model: Model.modelId('claude-haiku-4-5-20251001'),
         maxTokens: BriefConfig.fallbackMaxTokens,
         messages: [
           Message(

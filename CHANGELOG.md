@@ -171,7 +171,7 @@ CRITICAL LENGTH REQUIREMENT:
 
 | Provider | Before v3.4 | After v3.4 | Savings |
 |----------|-------------|------------|---------|
-| **Claude Sonnet 4** | $0.08-0.10 | $0.04-0.05 | **50%** |
+| **Claude Haiku 4.5** | $0.08-0.10 | $0.04-0.05 | **50%** |
 | **Gemini 2.5 Flash** | $0.0002 | $0.0001 | **50%** |
 
 #### Monthly Cost Projections
@@ -444,11 +444,11 @@ abstract class AIArticleGenerator {
 ```
 
 **Anthropic Implementation** (`lib/article_generator.dart`):
-- Uses Claude Sonnet 4 model
-- 8000 max tokens for long-form content
+- Uses Claude Haiku 4.5 model
+- 6000 max tokens for focused content
 - Comprehensive SEO prompt
 - Retry mechanism with exponential backoff
-- Cost tracking (~$0.05-0.08 per article)
+- Cost tracking (~$0.02-0.04 per article)
 
 **Gemini Implementation** (`lib/gemini_article_generator.dart`):
 - Uses Gemini 2.5 Flash model
@@ -682,17 +682,17 @@ dart run enhanced_seo_tool.dart "keyword" --brief --provider=anthropic
 
 #### 2. **Provider Comparison**
 
-| Feature | Gemini 1.5 Flash | Claude Sonnet 4 |
+| Feature | Gemini 1.5 Flash | Claude Haiku 4.5 |
 |---------|------------------|-----------------|
 | **Speed** | ⚡ 1-2 seconds | 🐢 2-3 seconds |
-| **Cost/Brief** | 💰 $0.000225 | 💸 $0.0105 |
+| **Cost/Brief** | 💰 $0.000225 | 💸 $0.0028 |
 | **Quality** | ⭐⭐⭐⭐ Excellent | ⭐⭐⭐⭐⭐ Premium |
 | **Best For** | High volume, tight budget | Premium quality, advanced reasoning |
 
 **Cost Comparison:**
-- **10 briefs/month**: Gemini $0.0023 vs Claude $0.105 (97.9% savings)
-- **100 briefs/month**: Gemini $0.023 vs Claude $1.05 (97.9% savings)
-- **1000 briefs/month**: Gemini $0.23 vs Claude $10.50 (97.9% savings)
+- **10 briefs/month**: Gemini $0.0023 vs Claude $0.028 (91.9% savings)
+- **100 briefs/month**: Gemini $0.023 vs Claude $0.28 (91.9% savings)
+- **1000 briefs/month**: Gemini $0.23 vs Claude $2.80 (91.9% savings)
 
 #### 3. **Abstract Provider Interface**
 - Created unified interface for all AI providers

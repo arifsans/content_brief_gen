@@ -43,7 +43,7 @@ Pastikan judul tidak menyebutkan merek/brand tertentu.
 
       final response = await _anthropic.createMessage(
         request: CreateMessageRequest(
-          model: Model.modelId('claude-sonnet-4-5-20250929'),
+          model: Model.modelId('claude-haiku-4-5-20251001'),
           maxTokens: 600,
           messages: [
             Message(

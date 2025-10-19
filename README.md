@@ -99,8 +99,8 @@ dart run enhanced_seo_tool.dart
 ### 🤖 **AI-Powered Content Brief Generation (Indonesian Language)**
 - **Interactive Input Mode** - Guided step-by-step workflow without complex arguments
 - **Dual AI Provider Support** - Choose between Anthropic Claude or Google Gemini interactively
-- **Anthropic Claude Integration** - Premium AI using Claude Sonnet 4.5 for highest quality content
-- **Google Gemini Integration** - Cost-effective AI using Gemini 1.5 Flash (97.9% cheaper)
+- **Anthropic Claude Integration** - Premium AI using Claude Haiku 4.5 for highest quality content
+- **Google Gemini Integration** - Cost-effective AI using Gemini 1.5 Flash (91.9% cheaper)
 - **Easy Provider Selection** - Simple number input to choose your AI provider
 - **AI Title Generation** - Generates 5-10 SEO-friendly article titles with automatic brand filtering
 - **Interactive Title Selection** - Choose from AI-generated titles or input your own custom title  
@@ -423,10 +423,10 @@ seo-tool "bisnis online pemula" --brief --provider=gemini
 
 | Feature | Anthropic Claude | Google Gemini |
 |---------|-----------------|---------------|
-| **Model** | Claude Sonnet 4.5 | Gemini 1.5 Flash |
+| **Model** | Claude Haiku 4.5 | Gemini 1.5 Flash |
 | **Speed** | Fast (~2-3s) | Ultra Fast (~1-2s) ⚡ |
-| **Cost per Brief** | $0.0105 | $0.000225 💰 |
-| **Cost Savings** | Baseline | **97.9% cheaper!** |
+| **Cost per Brief** | $0.0028 | $0.000225 💰 |
+| **Cost Savings** | Baseline | **91.9% cheaper!** |
 | **Quality** | Excellent ⭐⭐⭐⭐⭐ | Very Good ⭐⭐⭐⭐ |
 | **Best For** | Premium content | High-volume generation |
 | **Context Window** | 200k tokens | 128k tokens |

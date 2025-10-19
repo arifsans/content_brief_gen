@@ -4,10 +4,10 @@
 
 | Feature | Anthropic Claude | Google Gemini |
 |---------|-----------------|---------------|
-| **Model** | Claude Sonnet 4 | Gemini 2.0 Flash |
+| **Model** | Claude Haiku 4.5 | Gemini 2.0 Flash |
 | **Speed** | Fast (~2-3s) | Ultra Fast (~1-2s) |
-| **Cost (Input)** | $3.00/1M tokens | $0.075/1M tokens ⭐ |
-| **Cost (Output)** | $15.00/1M tokens | $0.30/1M tokens ⭐ |
+| **Cost (Input)** | $0.80/1M tokens | $0.075/1M tokens ⭐ |
+| **Cost (Output)** | $4.00/1M tokens | $0.30/1M tokens ⭐ |
 | **Prompt Caching** | ✅ Yes (90% cheaper) | ❌ No |
 | **Quality** | Excellent ⭐⭐⭐⭐⭐ | Very Good ⭐⭐⭐⭐ |
 | **Context Window** | 200k tokens | 128k tokens |
@@ -21,9 +21,9 @@ Assuming typical content brief generation:
 
 ### Anthropic Claude
 ```
-Input:  1000 tokens × $3.00/1M  = $0.003
-Output:  500 tokens × $15.00/1M = $0.0075
-Total:  $0.0105 per brief
+Input:  1000 tokens × $0.80/1M  = $0.0008
+Output:  500 tokens × $4.00/1M = $0.002
+Total:  $0.0028 per brief
 ```
 
 ### Google Gemini
@@ -33,7 +33,7 @@ Output:  500 tokens × $0.30/1M  = $0.00015
 Total:  $0.000225 per brief
 ```
 
-### Savings: 97.9% cheaper with Gemini! 💰
+### Savings: 91.9% cheaper with Gemini! 💰
 
 ## When to Use Each Provider
 
@@ -55,19 +55,19 @@ Total:  $0.000225 per brief
 ## Real-World Scenarios
 
 ### Scenario 1: Small Business Blog (10 briefs/month)
-- **Claude**: $0.0105 × 10 = **$0.105/month**
+- **Claude**: $0.0028 × 10 = **$0.028/month**
 - **Gemini**: $0.000225 × 10 = **$0.00225/month**
-- **Savings**: $0.10 (97.9%)
+- **Savings**: $0.026 (91.9%)
 
 ### Scenario 2: Content Agency (100 briefs/month)
-- **Claude**: $0.0105 × 100 = **$1.05/month**
+- **Claude**: $0.0028 × 100 = **$0.28/month**
 - **Gemini**: $0.000225 × 100 = **$0.0225/month**
-- **Savings**: $1.03 (97.9%)
+- **Savings**: $0.26 (91.9%)
 
 ### Scenario 3: Large Scale Operation (1000 briefs/month)
-- **Claude**: $0.0105 × 1000 = **$10.50/month**
+- **Claude**: $0.0028 × 1000 = **$2.80/month**
 - **Gemini**: $0.000225 × 1000 = **$0.225/month**
-- **Savings**: $10.28 (97.9%)
+- **Savings**: $2.58 (91.9%)
 
 ## Quality Comparison
 
@@ -150,6 +150,6 @@ $env:GEMINI_API_KEY="your_gemini_key"
 
 ## Bottom Line
 
-**For 97.9% cost savings with still-excellent quality, use Gemini!** 🚀
+**For 91.9% cost savings with still-excellent quality, use Gemini!** 🚀
 
 Both providers are excellent choices, but Gemini offers exceptional value for money. You can always switch providers on a per-request basis depending on your needs.

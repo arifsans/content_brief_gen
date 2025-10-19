@@ -267,7 +267,7 @@ Future<void> main(List<String> args) async {
       print('  ✅ Step 5: Generated full SEO-optimized article (${provider == AIProvider.anthropic ? 'Claude' : 'Gemini'})');
     }
     print('');
-    print('⚡ AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude Sonnet 4' : 'Google Gemini 2.5 Flash Lite'}');
+    print('⚡ AI Provider: ${provider == AIProvider.anthropic ? 'Anthropic Claude Haiku 4.5' : 'Google Gemini 2.5 Flash Lite'}');
 
   } catch (e) {
     print('\n❌ An error occurred: $e');
